@@ -1,0 +1,3156 @@
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 1 of 86 
+ 
+Page 1 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+PLC Functional Design Specification 
+ 
+E354086-00000-271-078-0003 
+ 
+REV. 02 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+DOCUMENT APPROVAL PROCESS 
+NAME POSITION/MEETING NO. SIGNATURE DATE 
+Originator: Nitin Vithal PLC Lead Engineer  14-09-2019 
+Approver: Paulo De Sousa Gomes Project Manager  14-08-2019 
+Original date: 12-07-2018  
+Effective date: 10-11-2021   TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 2 of 86 
+ 
+Page 2 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+DOCUMENT CHANGE HISTORY: 
+The owner of this document is responsible for the revision and control of the document, including 
+updating of the table below, which contains the history of the document with details of each revision . 
+Date Previous 
+Rev No. 
+New 
+Rev No. 
+Details of Revision 
+10.11.2021 0B 02 As Built 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 3 of 86 
+ 
+Page 3 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+TABLE OF CONTENTS 
+1 INTRODUCTION ..................................................................................................................... 7 
+1.1 Purpose ......................................................................................................................... 7 
+1.2 Scope ............................................................................................................................ 7 
+1.2.1 Requirements Included ............................................................................................ 7 
+1.2.2 Requirements Excluded ........................................................................................... 7 
+1.3 Terms and Definitions ..................................................................................................... 8 
+1.3.1 Abbreviations .......................................................................................................... 8 
+1.3.2 Definitions .............................................................................................................. 9 
+2 APPLICABLE DOCUMENTS ..................................................................................................... 13 
+2.1 TPL Applicable Specifications and Standards ................................................................... 13 
+2.2 Other Applicable Specifications and Standards ................................................................ 14 
+2.3 Reference Documentation ............................................................................................. 15 
+3 PLC CONFIGURATION ........................................................................................................... 17 
+3.1 PLC System Overview ................................................................................................... 17 
+3.2 Hot Standby Configuration ............................................................................................ 18 
+3.2.1 M580 Hot Standby Data ......................................................................................... 18 
+3.2.2 PLC Backplane ...................................................................................................... 19 
+3.2.3 Rack Power Supplies.............................................................................................. 20 
+3.2.4 CPU - BMEH584040 ............................................................................................... 20 
+3.2.4.1 CPU Module Front and Back Views .................................................................. 20 
+3.2.4.2 CPU Firmware Mismatch ................................................................................. 21 
+3.2.4.3 Application Mismatch ...................................................................................... 21 
+3.2.4.4 SD Memory Card ............................................................................................ 22 
+3.2.5 BMENOC0321 Control Network Module ................................................................... 22 
+3.2.6 BMXNRP0201 Fibre Converter Module ..................................................................... 23 
+3.2.7 Local Rack Modules ............................................................................................... 24 
+3.2.8 Remote Racks – X80 IO ......................................................................................... 25 
+3.2.8.1 BMECRA31210 Communication adapter ........................................................... 25 
+3.2.9 Switchover Causes ................................................................................................ 26 
+3.2.10 Switchover Execution Time .................................................................................... 27 
+3.2.11 Switchover effect on the Main IP Address Assignments ............................................ 27 
+3.2.12 Switchover Effect on Remote Outputs ..................................................................... 27 
+3.2.13 Change of Configuration on the Fly (CCOTF) ........................................................... 28 
+3.2.14 Diagnostics ........................................................................................................... 28 
+3.2.14.1 IO Module LED Diagnostics ............................................................................. 28 
+3.2.14.2 CPU LED Panel ............................................................................................... 29 
+3.2.14.3 Diagnostics via Unity Pro ................................................................................ 31 
+3.2.14.4 Remote diagnostics ........................................................................................ 31 
+3.2.14.5 PLC Diagnostics sent to SCADA ....................................................................... 31 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 4 of 86 
+ 
+Page 4 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.3 Performance ................................................................................................................. 31 
+3.3.1 Controller Performance .......................................................................................... 31 
+3.3.2 Application Response Time .................................................................................... 32 
+3.3.3 Availability ............................................................................................................ 33 
+3.4 System Architecture ...................................................................................................... 34 
+3.4.1 Ring Topology with HSBY....................................................................................... 34 
+3.4.2 On-Site Engineering Stations .................................................................................. 35 
+3.4.3 X80 Remote IO ..................................................................................................... 36 
+3.4.3.1 IO Assignment and Grouping Philosophy ......................................................... 36 
+3.4.3.2 Digital Inputs ................................................................................................. 36 
+3.4.3.2.1 Specifications ................................................................................................ 37 
+3.4.3.2.2 Module Density ............................................................................................. 39 
+3.4.3.2.3 Wiring connections ........................................................................................ 39 
+3.4.3.2.4 TELEFAST ABE7 Terminal Blocks General Description ...................................... 40 
+3.4.3.2.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) ................................ 41 
+3.4.3.3 Digital Outputs ............................................................................................... 42 
+3.4.3.3.1 Specifications ................................................................................................ 44 
+3.4.3.3.2 Module Density ............................................................................................. 45 
+3.4.3.3.3 Wiring connections ........................................................................................ 46 
+3.4.3.3.4 Telefast ABE7 Terminal Blocks – ABE-7P16T210 .............................................. 47 
+3.4.3.3.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) ................................ 48 
+3.4.3.4 High Speed Counter module ........................................................................... 48 
+3.4.3.4.1 Specifications ................................................................................................ 49 
+3.4.3.4.2 Module Density ............................................................................................. 49 
+3.4.3.4.3 Wiring connections ........................................................................................ 50 
+3.4.3.4.4 Removable Terminal Blocks ........................................................................... 50 
+3.4.3.4.5 Telefast ABE7 Terminal Blocks ....................................................................... 50 
+3.4.3.5 Analogue Inputs ............................................................................................ 51 
+3.4.3.5.1 Specifications ................................................................................................ 51 
+3.4.3.5.2 Module Density ............................................................................................. 52 
+3.4.3.5.3 Wiring connections ........................................................................................ 52 
+3.4.3.5.4 Telefast ABE7 Terminal Blocks ....................................................................... 53 
+3.4.3.5.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) ................................ 53 
+3.4.3.6 Analogue Outputs .......................................................................................... 53 
+3.4.3.6.1 Specifications ................................................................................................ 53 
+3.4.3.6.2 Module Density ............................................................................................. 54 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 5 of 86 
+ 
+Page 5 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.6.3 Wiring connections ........................................................................................ 54 
+3.4.3.6.3.1 Telefast ABE7 Terminal Blocks ................................................................. 55 
+3.4.3.6.3.2 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) .......................... 55 
+3.4.4 Fynnlands Site....................................................................................................... 55 
+3.4.5 Field Power Supplies .............................................................................................. 56 
+3.4.6 Galvanic Isolators .................................................................................................. 58 
+3.4.7 Panel Specifications ............................................................................................... 58 
+3.4.8 PLC & LAN Architectures ........................................................................................ 58 
+3.4.8.1 Typical Pump Station Architecture ................................................................... 58 
+3.4.8.2 Typical Booster Station Architecture ................................................................ 58 
+3.4.8.3 Fynnlands Station Architecture ........................................................................ 58 
+3.4.8.4 Coalbrook Architecture ................................................................................... 58 
+3.4.9 Communication and System Interfaces ................................................................... 59 
+3.4.9.1 Interfaces ...................................................................................................... 59 
+3.4.9.1.1 Interface 1: OASyS SCADA............................................................................. 59 
+3.4.9.1.2 Interface 3: Metering ..................................................................................... 59 
+3.4.9.1.3 Interface 4: Fire and Gas ............................................................................... 59 
+3.4.9.1.4 Interface 5: ABB ACS1000 MV Variable Speed Drive ........................................ 59 
+3.4.9.1.5 Interface 6: Bentley Nevada Machine Monitoring System ................................. 60 
+3.4.9.1.6 Interface 7: Tank Gauging System Heads ....................................................... 60 
+3.4.9.1.7 Interface 8: UPS Interface ............................................................................. 60 
+3.4.9.1.8 Interface 9: Safety Instrumented Systems ...................................................... 60 
+3.4.9.2 Profibus Remote Master ................................................................................. 61 
+3.4.9.3 Modbus Serial ................................................................................................ 62 
+3.4.10 Time Synchronization ............................................................................................ 63 
+4 SOFTWARE .......................................................................................................................... 64 
+4.1 Unity Pro ...................................................................................................................... 64 
+4.1.1 Programming Platform ........................................................................................... 64 
+4.1.2 Identification Standards ......................................................................................... 65 
+4.1.2.1 Project Name ................................................................................................. 65 
+4.1.2.2 Station Revision Management. ........................................................................ 65 
+4.1.2.3 Remote Rack Labelling ................................................................................... 66 
+4.1.2.3.1 Panel Numbers are labelled as follows: ........................................................... 66 
+4.1.2.3.2 PLC CPU Hot/Standby racks ........................................................................... 66 
+4.1.2.3.3 Remote IO racks ........................................................................................... 66 
+4.1.3 Software Naming Standard .................................................................................... 67 
+4.1.4 Unity Pro Programming Languages ......................................................................... 67 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 6 of 86 
+ 
+Page 6 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.1.4.1 Function Block Diagram .................................................................................. 68 
+4.1.4.2 Structured Text .............................................................................................. 69 
+4.1.4.3 Sequential Function Chart (SFC) ..................................................................... 69 
+4.1.5 Software Coding Standards .................................................................................... 70 
+4.1.6 Derived Function Blocks ......................................................................................... 70 
+4.1.6.1 Derived Function block construction ................................................................ 72 
+4.1.6.2 Function Block Interface ................................................................................. 74 
+4.1.7 Derived Data Types ............................................................................................... 75 
+4.1.8 Libraries ............................................................................................................... 76 
+4.1.8.1 Unity Pro Function Block Libraries ................................................................... 76 
+4.1.8.2 Derived Libraries ............................................................................................ 77 
+4.1.8.3 Management of Libraries ................................................................................ 79 
+4.1.9 Security ................................................................................................................ 79 
+4.2 Unity Simulator ............................................................................................................. 81 
+4.2.1 Software Testing ................................................................................................... 81 
+4.3 Unity Loader ................................................................................................................. 81 
+4.4 Version Control ............................................................................................................. 82 
+4.4.1 Application Version ................................................................................................ 82 
+4.4.2 Library Version ...................................................................................................... 84 
+4.4.3 Standard Block Versions ........................................................................................ 85 
+4.4.4 Derived Function Block Version .............................................................................. 85 
+4.4.5 Unity Dif Software Tool .......................................................................................... 86 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 7 of 86 
+ 
+Page 7 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+1 INTRODUCTION 
+This document details the Functional Design Specification (FDS) for the PLC portion of the 
+Process Control System (PCS) solution for the PCS Upgrade Project. The purpose of this 
+document is to present a functional description of the systems and products to be supplied in 
+compliance with the project Works Information and client User Requirements Specifications.  
+Modicon M580 ePAC (Ethernet programmable automation controllers) PLCs will be used, in 
+high-availability Hot Standby (HSBY) configurations. Field signals will be interfaced to the PLC 
+via remote IO Racks, using the X80 range of IO modules. 
+Interface to the OASyS SCADA System will be Modbus TCP communications. 
+This document is considered a living document and will be updated through the project to 
+'As-Built' at the end of the project. 
+1.1 Purpose 
+The purpose of this specification is to describe the configuration and features of the Modicon 
+M580 HSBY PLC and related PLC hardware and software. The configuration laid out in this 
+specification forms the basis of Engineering design in the PCS Upgrade Project. 
+1.2 Scope 
+1.2.1 Requirements Included 
+This document shall cover: 
+• Modicon M580 features and operation 
+• Configuration for the PCS Upgrade Project. 
+• Functionality of the system and each of the related sub-systems 
+• Details of all internal and external communication interfaces 
+• Details of Software and Hardware component make-up identification and details 
+of all interfaces  
+• General software configuration principles 
+1.2.2 Requirements Excluded 
+This specification excludes the following Automation Systems, which are detailed in other 
+project-related Functional Design Specifications: 
+• OASyS SCADA, including the Liquid Management Suite and Replay functionality 
+• Sim-Suite Leak Detection System 
+• HMI Trainer System 
+• Per Site Software Configurations 
+ 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 8 of 86 
+ 
+Page 8 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+1.3 Terms and Definitions 
+1.3.1 Abbreviations 
+ACDB Alarm Configuration Database 
+API American Petroleum Institute 
+AS PL723 Automation Standard 
+ASCII American Standard Code for Information Interchange 
+CCOTF Change of Configuration on The Fly 
+CO Co-ordinating Officer 
+DCS  Distributed Control System  
+DDDT Device Derived Data Type 
+DDF Detected Dangerous Failure 
+DDS  Detailed Design Specification  
+DDT Derived Data Type 
+DIE Diesel 
+DOL Direct Online 
+DTM Device Type Manager 
+ECP Effluent Control Panel 
+EDS Engineering Design Specification 
+EIO Ethernet (Remote) IO 
+ePAC Ethernet Programmable Automation Controller 
+ES Engineering System 
+FAST PLC Fast Task which runs periodically at a pre-determined rate measured 
+in ms 
+F&G Fire and Gas 
+FBD Function Block Diagram  
+FC Flow Computer 
+FDS  Functional Design Specification  
+FDT Field Device Type 
+FFB Collective term for EF, EFB and DFB 
+FRS  Functional Requirements Specification  
+HART Highway Addressable Remote Transducer 
+HMI  Human Machine Interface  
+HSBY Hot Standby 
+I/O Input/output 
+IP Industrial Protocol 
+IS Intrinsically Safe 
+LAN Local Area Network 
+MAST PLC Master Task  which runs periodically at a pre -determined rate 
+measured in ms 
+MCC Master Control Centre 
+MDS Metering System 
+MIS Manufacturing Information System 
+MMS Machine Monitoring System TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 9 of 86 
+ 
+Page 9 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+MoC Mode of Control 
+MoO Mode of Operation 
+MTBF Mean Time Between Failure 
+MTTF Mean Time To Failure 
+MTTR Mean Time To Replacement 
+MV Medium Voltage 
+NOC National Operations Centre 
+OPC OLE for Process Control 
+OS Operating System 
+P&ID Piping and Instrumentation Drawing 
+PCS Process Control System 
+PFD  Process Flow Diagram  
+PID  Proportional, Integral & Derivative Controller  
+PLC Programmable Logic Controller 
+PLC  Programmable Logic Controller  
+RIO Remote Input/Outputs 
+RPI Request Packet Interval 
+RSTP Rapid Spanning Tree Protocol 
+RTU Remote Terminal Unit 
+SCADA Supervisory, Control and Data Acquisition  
+SCC Secondary Control Centre 
+SFC Sequential Flow Chart 
+SIF Safety Instrumented Function 
+SIL Safety Integrity Level 
+SIS Safety Instrumented System 
+SNMP Simple Network Management Protocol 
+SO Station Operator 
+ST Structured Text 
+TBA To be Advised 
+TBC To be Confirmed 
+TBD To be Defined 
+TCP Transmission Control Protocol 
+TGS Tank Gauging System 
+URS  User Requirements Specification 
+VSD Variable Speed Drive  
+WAN Wide Area Network 
+Table 1-1: Abbreviations 
+1.3.2 Definitions 
+Adapter Ethernet/IP device the Publishes data at a set RPI(Request Packet 
+Interval) and sent as multicast messages to Scanner Devices. 
+Advanced Database 
+Editor (ADE) 
+An OASyS DNA support and configuration program for editing the 
+real-time database. TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 10 of 86 
+ 
+Page 10 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Application Software The software written specifically to perform user requirements for an 
+individual plant when standard software packages cannot be 
+configured to meet the requirements. Application software works 
+with the standard operating software and it does not modify any  
+standard software 
+Archive Saving measured values and messages in the operator station to 
+history so the data can be called up over a long period of time 
+Availability The probability that a system will perform its designed function when 
+required to do so is expressed as the fraction (or percentage) of time 
+a system or individual module remains on -line and performs as 
+specified during an observation period. It is calculated as follows: A 
+= MTTF/MTBF or A = MTTF/(MTTF + MTTR) 
+Blocks Blocks are separate p arts of a user control software configuration 
+distinguished by their function, structure, and purpose 
+CFC Continuous Function Chart is a high -level graphical language using 
+function blocks for configuring continuous control systems 
+Control Panel 
+A standard graphic element that represents, for example, an 
+analogue controller instrument, a hardwired push -button, or a 
+switch, allowing operator monitoring and control of the device , and 
+comprises on one RTDB object. 
+Display Graphics which will show the information coming from the RealTime 
+database statically or dynamically. 
+Engineering Server 
+(ES) 
+Used for preparation and distribution of software binaries, displays 
+and database changes to the SCADA servers. 
+Faceplate 
+A standard graphic element that represents, for example, an 
+analogue controller instrument, a hardwired push -button, or a 
+switch, allowing operator monitoring and control of the device , and 
+comprises of multiple RTDB objects. 
+Fault Tolerance The property of a s ystem which permits it to carry out its assigned 
+function even in the presence of one or more faults in its hardware 
+or software components. Fault tolerance is to be achieved 
+automatically without any user intervention 
+Function Block A control bock as defined in IEC 1131-3. See also Block 
+HMI The graphical interface program for allowing an operator to interact 
+with and control a process 
+Instance A copy of a function block, which is used again in the control 
+configuration for a similar application 
+Ladder Logic (LAD) Graphical representation of the automation task using relay symbols 
+complying with DIN 19239 
+MTBF MTBF is the expected time between failures of a system including 
+time to repair. It is derived in its simplest form as: MTBF = MTTF + 
+MTTR 
+MTTF MTTF is the expected time to failure of a system in a population of 
+identical systems TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 11 of 86 
+ 
+Page 11 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+MTTR MTTR is the statistical average of time taken to identify and repair a 
+fault (including diagnostics) 
+Mode Control block operational condition, such as manual, automatic, or 
+cascade 
+Monitor Physical device used to show displays. 
+OPC Software applications which allow bi -directional data flow between 
+two separate applications. These applications may be running on the 
+same or separate se rvers. OPC refers to the complete OPC 
+specification 
+Operator 
+Workstation 
+Electronic equipment on which the HMI resides, including, at a 
+minimum, PC workstation, a monitor, keyboard, and pointing device 
+used by an operator to monitor and control his assigned process or 
+manufacturing units 
+Operator / Controller One who exercises central surveillance and control of the field using 
+SCADA. 
+Personal Computer 
+(PC) 
+A workstation or server, typically running MS -Windows when 
+referred to in this way. 
+PLC Programmable Logic Controller, used for discrete and continuous 
+control in processing and manufacturing plants 
+Point A process variable derived from an input signal or calculated in a 
+process calculation 
+Process Object A collection of variables and param eters that performs a control 
+function (e.g. motor, block valve, PID Controller) which may consist 
+of more than one I/O point 
+Plug and Play The ability of hardware equipment to automatically identify itself to 
+the system. When the equipment is powered up it is automatically 
+assigned a unique identity without the need to set any dipswitches 
+Real-time The inherent property of a system to distribute data such that the 
+users of the data always have the most current data at all times.  
+Reliability The probability that when operating under stated environmental 
+conditions, the system will perform continuous ly, as specified, over 
+a specific time interval 
+Redundant A system/subsystem with two modules that provides automatic 
+switchover to a backup in the event of a failure, without loss of a 
+system function 
+Scanner 
+Ethernet/IP – A scanner device opens connections and initiates data 
+transfers. This device is typically the subscriber of data. (See Adapter 
+for Publisher) 
+Screen Part of the monitor which is shown to arrange displays. 
+Sequential Function 
+Chart (SFC) 
+Sequential Function Charts are a high-level graphical configuration 
+language for sequential control applications 
+Statement List (STL) Statement List is a textual programming language resembling 
+machine code and complying with IEC 1131-3 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 12 of 86 
+ 
+Page 12 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Structured Control 
+Language (SCL) 
+A high-level language complying with IEC 1131 -3 and resembling 
+Pascal for programming complex or custom logic tasks within the 
+controller 
+System Bus The network used for communication between controllers and HMI 
+servers 
+System Software The software components that are required to make the system 
+functional and fit for purpose. System software shall include any 
+firmware, operating software and tools that are supplied as standard 
+items (for example configuration software, operating system and 
+human interface configuration software). Typically, system software 
+is configured to meet user requirements 
+User Requirements Those requirements that describe what functions the system must 
+perform to achieve the objectives of operating the physical p lant. 
+Typically, the system is configured to meet user requirements 
+Works 
+PCS Upgrade Project which includes design, engineering, supply, 
+installation, commissioning and handover of the Process Control, 
+Integrated Custody Metering and Pipeline Monitoring Systems and 
+Deployment to all Crude Oil Pipeline Stations – Main Automation 
+Contract  
+Table 1-2: Definitions 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 13 of 86 
+ 
+Page 13 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+2 APPLICABLE DOCUMENTS 
+All documents of the exact revision cited in the Applicable Documents form part of this 
+specification to the extent specified. In the event of conflict between the text of this 
+specification and the documents invoked herein, the text of this specification shall take 
+precedence.  
+However, nothing in this specification supersedes applicable laws and regulations.  
+2.1 TPL Applicable Specifications and Standards 
+No. and Title Doc. No. Rev. 
+[1] PCS Control Module Specification E354086-00000-
+271-078-0005 
+Latest 
+[2] SCADA Functional Design Specification E354086-00000-
+271-078-0018 
+Latest 
+[3] Metering FDS E354086-00000-
+271-078-0020 
+Latest 
+[4] SCADA Configuration Plan E354086-00000-
+271-078-0003 
+Latest 
+[5] SCADA/PLC Communication Plan E354086-00000-
+271-078-0012 
+Latest 
+[6] LDS Functional Design Specification E354086-00000-
+271-078-0007 
+Latest 
+[7] LAN Network Standard E354086-00000-
+271-078-0002 
+Latest 
+[8] HMI Style Guide E354086-00000-
+271-078-0006 
+Latest 
+[9] PCS SCADA System Architecture E354086-00000-
+271-256-0002 
+Latest 
+[10] PLC LAN Architecture Fynnlands Intake Station E354086-00001-
+271-256-0001 
+Latest 
+[11] PLC LAN Architecture Typical Pump Station E354086-00000-
+271-256-0006 
+Latest 
+[12] PLC LAN Architecture Typical Booster Station E354086-00000-
+271-256-0005 
+Latest 
+[13] PLC LAN Architecture Coalbrook E354086-00017-
+271-256-0001 
+Latest 
+[14] PCS Performance Specification E354086-00000-
+271-078-0014 
+Latest 
+[15] Software Configuration Management Plan E354086-00000-
+271-050-0002 
+Latest TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 14 of 86 
+ 
+Page 14 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+[16] Software Lifecycle Plan E354086-00000-
+130-050-0001 
+Latest 
+[17] Process Control System URS  TPL-TECH-I-C-
+SPEC-012 
+03 
+[18] PCS Control Module Standard TPL-TECH-I-C-
+SPEC-013 
+01 
+[19] Integrated Metering System URS TPL-TECH-M-
+SPEC-011B 
+04 
+[20] Leak Detection System User Requirement 
+Specification 
+H354086-
+00000-270-078-
+0004 
+0 
+[21] Process Control System Automation Standard PL723 04 
+[22] Process Control Network Standard PL703 2.0 
+[23] S600 Floboss Stream FDS TPL-TECH-I-M-
+SPEC-016 [4] 
+04 
+[24] S600 Floboss Prover FDS TPL-TECH-I-M-
+SPEC-017 
+04 
+[25] TPL Product Codes and Colours Specification 2684358-P-SC0-
+CS-SP-001(00) 
+00 
+[26] Alarm Philosophy H354086-
+00000-270-080-
+0001 [B] 
+B 
+[27] PLC System Architecture Failure and Recovery 
+Analysis 
+H354086-
+00000-271-078-
+0016 
+Latest 
+[28] PCS Naming Standard E354086-00000-
+271-050-0006 
+Latest 
+[29] PLC Coding Standard E354086-00000-
+271-050-0004 
+Latest 
+[30] Typical PLC Panel General Arrangement E354086-00000-
+271-270-0001 
+Latest 
+[31] Typical PCS Server Panel: All Pump Stations E354086-00000-
+271-270-0005 
+ 
+Latest 
+ 
+2.2 Other Applicable Specifications and Standards 
+The following national and international standards are required to be complied with and shall 
+be read in conjunction with this Specification. 
+No. and Title Doc. No. Rev. TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 15 of 86 
+ 
+Page 15 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+[32] Standard for Information Technology – Software 
+Lifecycle Processes 
+IEEE 12207.0 1996 
+[33] Electromagnetic compatibility (EMC) - Part 4 -2: 
+Testing and measurement techniques - Electrostatic 
+discharge immunity test 
+IEC 61000-4-2 
+(2001-04) 
+2001-04 
+[34] Electromagnetic compatibility (EMC) - Part 4 -3: 
+Testing and measurement techniques - Electrostatic 
+discharge immunity test 
+IEC 61000-4-3 
+(2002-03) 
+2002-03 
+[35] Electromagnetic compatibility (EMC) - Part 4: Testing 
+and measurement techniques - Electrical fast 
+transient/burst immunity test 
+IEC 61000-4-4 
+(1995-01) 
+1995-01 
+[36] Programmable controllers - Part 3: Programming 
+languages 
+IEC 61131-3 
+(1993-03) 
+1993-03 
+[37] Drawing Standards PL100 03 
+[38] Plant & Equipment Tag Numbering Standards PL101 03 
+[39] Equipment, Instrument & Electrical Symbology 
+Standards 
+PL102 01 
+ 
+2.3 Reference Documentation 
+The documents included in this section do not form part of the specification, but are included 
+for background and context.  Sections and information used within this document have been 
+used in full or in part from these documents of Schneider Electric. 
+No. Doc. No. Rev. 
+[40] Modicon X80 Racks and Power Supplies Hardware 
+Reference Manual 
+EIO000002626 
+09/2017 
+09/2017 
+[41] Modicon M580 BMENOC0321 Control Network 
+Module Installation and Configuration Guide 
+NVE24232.01 02/2017 
+[42] Modicon M580 Hot Standby System planning guide 
+for frequently used Architectures 
+NHA58880 
+09/2017 
+09/2917 
+[43] Modicon M580 Hardware Reference Manual EIO0000001578.00 10/2013 
+[44] Modicon M340 Using Unity Pro – Discrete 
+Input/Output Modules User Manual 
+35012474.04 05/2010 
+[45] Modicon M340 using Unity Pro – Counting Module 
+BMXEHC0800 User Manual 
+EIO000000318.03 07/2012 
+[46] Modicon M340 with Unity Pro – Analog input/output 
+modules User manual 
+3501197.07 07/2012 
+[47] Profibus Remote Master – User Manual S1A64489.00 04/2010 
+[48] Unity Pro Languages and Program Structure 
+Reference Manual 
+3500614404 06/2006 
+[49] Unity Loader V12.0 Readme  V12.0 TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 16 of 86 
+ 
+Page 16 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+[50] Unity Dif – a SoCollaborative Software User Manual EIO0000001720.00 11/2013 
+[51]  Power Supplies, Phaseo ABL7, ABL 8 Catalog June 2018  
+[52] Modicon M580 Remote IO Modules Installation and 
+Configuration Guide 
+EIO0000001584.02 09/2014 
+[53] PlantStruxure General Purpose Library for Unity – 
+Process Components User Guide 
+EIO0000002093.06 01/2018 
+[54] TVDA- “How can I implement an M580 Redundant 
+System?” V2 
+- V2 2017 
+[55] BMXNRP0200/0201 Fiber Convert er module User 
+Guide 
+EIO0000001108.00 07/2012 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 17 of 86 
+ 
+Page 17 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3 PLC CONFIGURATION  
+3.1 PLC System Overview 
+The Modicon M580 Automation platform is the current flagship model PLC offering from 
+Schneider Electric. The M580 allows two types of architectures – standard application and 
+High-Availability applications. Standard applications comprise of a single BMEP58xxxx 
+processor configuration. 
+The High Availability configuration is the choice of configuration for the PCS Upgrade Project 
+since downtime cannot be tolerated. This configuration delivers high availability through 
+redundancy. (The availability calculations are documented in the PLC System Architecture 
+Failure and Recovery Analysis document [27]). Two backplanes are configured with identical 
+hardware and software.  
+The racks which house the Processors are known as the Local Racks. Due to the redundant 
+nature of this configuration, the racks are perceived and operated as one. At any given 
+moment, only one of the CPUs are executing program logic and servicing remote/distributed 
+IO at a time. This is known as the Primary CPU. The other CPU is known as the Standby CPU. 
+Before each scan, the state RAM (the IO image and current values of all of the registers 
+defined in the PLC) of the Primary CPU is copied to the Standby CPU via a dedicated Ethernet 
+Link. This includes date and time data. This means that the Standby CPU always has current 
+system values and is ready to assume control within one scan if the primary CPU stops 
+communicating. Upon specific events, which are described in Section 3.2.9, the Primary and 
+Standby CPUs switch roles i.e. Standby assumes the role of Primary in executing program 
+logic and servicing RIO/DIO.  
+It is not possible to allocate IO to a local Rack on a HSBY configuration. IO is allocated in 
+Remote racks which communicate to the local rack via Ethernet. IO on the M580 range of 
+PLC is generically and collectively referred to as X80 IO. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 18 of 86 
+ 
+Page 18 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.2 Hot Standby Configuration 
+ 
+Figure 3-1: Hot Standby Local Racks  
+3.2.1 M580 Hot Standby Data 
+Periodic Data Exchanges 
+The HSBY CPUs perform two periodic data exchanges: 
+• Before each MAST cycle, the primary CPU transmits to the standby CPU application 
+variables, system status and IO data. 
+• Periodically, both CPUs exchange the contents of the T_M_ECPU_HSBY DDT. This 
+Derived Data Type is the exclusive interface between the M580 HSBY system and the 
+application running in the CPU. 
+The T_M_ECPU_HSBY DDT presents three distinct sections: 
+• LOCAL_HSBY_STS: Provides information about the local PLC. Data is both auto-
+generated by the HSBY system and provided by the application. This data is 
+exchanged with the remote PLC. 
+• REMOTE_HSBY_STS: Provides information about the remote PLC and contains the 
+image of the last received exchange from the counterpart PLC. The validity of this 
+information is represented by the REMOTE_STS_VALID flag in the common part of 
+this DDT. NOTE: The structure of both the LOCAL_HSBY_STS and 
+REMOTE_HSBY_STS sections are determined by the HSBY_STS_T data type and are 
+therefore identical. Each is used to describe data relating to one of the two HSBY 
+PLCs. 
+• A common part of the DDT: Consists of several objects, including status data system 
+control objects and command objects 
+o Status data is provided by the HSBY system as a result of diagnostic 
+checking. 
+o System control objects enable you to define and control system behaviour. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 19 of 86 
+ 
+Page 19 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+o Command data objects include executable commands that can be used to 
+modify system state. 
+Refer to the Modicon M580 Hardware Reference Manual [43] for specific details of the 
+T_M_ECPU_HSBY DDT. 
+Data Transmitted Each MAST Cycle 
+Before each MAST task, the primary CPU transmits data to the standby CPU in two ways. The 
+primary CPU uses: 
+• The Hot Standby link to send application variables, system status and IO data. 
+• The Ethernet RIO link to send application variables and system status. 
+When communication is lost on the Hot Standby link, the standby CPU does not receive 
+updated IO data and application variables. If communication is lost for three (3) seconds or 
+more, the standby CPU enters wait state. Wait state is characterised as a condition of neither 
+Primary nor Standby. It is ‘waiting’ for all preconditions to be met (HSBY Link). 
+The HSBY link is a crucial component to ensuring High Availability. As such it’s status is sent 
+to the SCADA for critical alarming. 
+ 
+3.2.2 PLC Backplane 
+TPL has standardised on the use of 8 and 4 slot, standard backplanes BMEXBP0800 and 
+BMEXBP0400. These backplanes have also been standardised for Remote IO. One key role of 
+the backplane other than supply power to connected modules, is to provide a communication 
+bus for the modules installed on the rack. This communication bus provides support for XBUS 
+and Ethernet. All standard IO modules support XBUS while special purpose modules such as 
+HART, Weighting modules, Ethernet communication modules etc use Ethernet. 
+The 8 Slot BMEXBP0800 will be used on all Rack with the exception of MV and Metering 
+panels which will used the 4 slot BMEXBP0400. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 20 of 86 
+ 
+Page 20 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.2.3  Rack Power Supplies 
+The standard BMXCPS3500 High Power, Power Supply has been standardised on by TPL on 
+all racks. This is an alternating current power supply module with a nominal input voltage 
+range of 100-120VAC/200-240VAC.  
+3.2.4  CPU - BMEH584040 
+3.2.4.1 CPU Module Front and Back Views 
+ 
+Figure 3-2: CPU module view 
+ 
+ 
+1. LED diagnostic display panel 
+2. Mini-B USB port for module configuration via PC running Unity Pro 
+3. RJ45 Ethernet service port connector 
+4. RJ45 connectors that together serve as a dual port to the Ethernet network 
+5. SFP socket for copper or fibre-optic Hot Standby link connection 
+6. Hot Standby status link LED 
+7. SD memory card slot 
+8. A/B/Clear rotary selector switch, used to designate the PLC as either PLC A or PLC B, or to 
+clear the existing Unity Pro application 
+ 
+The BMEH584040 CPU is used in the PCS Upgrade Project. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 21 of 86 
+ 
+Page 21 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Feature BMEH584040 BMEH584060* 
+RIO drops (main+ 
+extended racks) 16 31 
+BMENOC0301/11 
+Ethernet scanners 4 6 
+Program (MB) 16 64 
+Data (MB) 2 Up to 64 
+Maximum retained    
+data (KB) 2048 4096 
+Maximum configurable 
+Hot Standby transfer 
+data (KB) 
+2048 4096 
+Data Storage (GB) 4 4 
+Discrete IO 4096 6144 
+Analogue IO 1024 1536 
+Table 3-1: CPU Specifications 
+* CPU available for use on larger sites. 
+3.2.4.2 CPU Firmware Mismatch 
+The M580 HSBY system can continue operating when there is a mismatch of firmware version 
+in the primary and standby CPUs, if each CPU firmware can execute the application. This 
+makes it possible to upgrade (or downgrade) CPU firmware without having to stop the 
+operation of the HSBY system. 
+3.2.4.3 Application Mismatch 
+The M580 HSBY system cannot operate if the primary and standby CPUs are equipped with 
+fundamentally different applications. In this case, the primary PLC operates as a standalone 
+PLC and the standby PLC enters the stop state.  
+The HSBY operation is restored by confirming that the applications in both CPUs are the 
+same. Procedures to deal with CPU failure is described in the PLC System Architecture Failure 
+and Recovery Analysis document [27] TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 22 of 86 
+ 
+Page 22 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.2.4.4 SD Memory Card 
+The SD Card is an option which is used on the PCS Upgrade Project for application and data 
+storage. The SD Card is installed in the memory slot on the CPU (Item 7 on Figure 3-2: CPU 
+module view). 
+The BMXRMS004GPF is a 4GB, Class A SD card which is rated for Industrial use. 
+Note: The BMXRMS004GPF memory card is formatted specifically for the M580 CPUs. If you 
+use this card with another CPU or tool, the card may not be recognized by the M580.  
+Memory card Characteristics 
+Global memory size 4 GB 
+Application backup size 64 MB 
+Data storage size 3.93 GB 
+Write/erase cycles (Typical) 100 000 
+Operating temperature range -40…+85 °C 
+File retention time 10 Years 
+Memory zone for FTP access Data storage directory 
+only 
+Table 3-2: Memory Card Specification 
+ 
+3.2.5 BMENOC0321 Control Network Module 
+The BMENOC0321 is the entry point from the control network (SCADA Network) to a device 
+network (including RIO and distributed equipment) managed by a Modicon M580 PLC. The 
+module provides network transparency and provides a direct Ethernet connection between 
+the control room subnetwork and the automation devices subnetwork.  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 23 of 86 
+ 
+Page 23 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 3-3: BMENOC0321 module 
+ 
+Feature Maximum Capacity 
+Client Simultaneous requests 16 
+Message Size 1024 Bytes 
+Server Simultaneous requests 32 
+Message Size 1024 Bytes 
+Table 3-3: BMENOC0321 Connection Specification 
+Refer to the Modicon M580 BMENOC0321 Control Network Installation and Configuration 
+Guide [41] for further information. 
+ 
+3.2.6 BMXNRP0201 Fibre Converter Module 
+The BMXNRP0201 serves as a Copper to Fibre / Fibre to Copper converter. These modules 
+are used to extend the distance of the network. Coalbrook will be the only site on the PCS 
+Upgrade Project to use these modules. The BMXNRP0201 supports single-mode fibre cable 
+for distances up to 15km. This module serves as a medium converter and has no 
+configuration. Power is supplied to this module via the Backplane. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 24 of 86 
+ 
+Page 24 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+ 
+Figure 3-4: BMXNRP0201 Single Mode Module 
+ 
+Refer to BMXNRP0200/201 Fiber Converter Module User Guide [55] for further information. 
+ 
+3.2.7 Local Rack Modules 
+The local rack comprises of (2 Local racks are used for HSBY): 
+• Backplane – BMEXBP0800 (8 Slot Backplane) 
+• Power Supply BMXCPS3500 
+• CPU – BMEH584040 
+• Hot Standby Link SFP (RJ45 Copper) – 490NAC0100 
+• Ethernet Communication Module – BMENOC0321 
+• Fibre Optic (Single Mode) Medium Convertor Module – BMXNRP0201 (The fibre optic 
+module will be used where necessary and may not be present on all sites throughout 
+the Crude Pipeline). 
+Note: A M580 Hot Standby Local rack: 
+• Does not support IO modules 
+• Does not support serial communication modules 
+• Cannot be Extended 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 25 of 86 
+ 
+Page 25 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.2.8 Remote Racks – X80 IO 
+The HSBY configuration makes use of X80 Remote IO drops which comprises of: 
+• Backplane – BMEXBP0800 (8 Slot Backplane) 
+• Power Supply BMXCPS3500 
+• Ethernet Communication module – BMECRA31210 
+• Fibre Optic (Single Mode) Medium Convertor Module – BMXNRP0201 (Where 
+necessary) 
+• Relevant IO Modules: Digital Inputs, Digital Outputs, Analogue Inputs, Analogue 
+Outputs, High Speed Counter 
+ 
+3.2.8.1 BMECRA31210 Communication adapter 
+The M580 PLC processor has 2 dedicated Device Ethernet ports which are used for 
+connection to multiple X80 remote IO racks. 
+The BMECRA31210 adapter is used as the interface at each remote rack. This module has the 
+following ports: 
+Service Port 
+• Allows the diagnosis of Ethernet device network ports and provides access to 
+external tools and devices (Unity Pro, ConneXium Network Manager, HMI etc.) 
+• The following modes are supported: 
+o Access port (Default): This mode supports Ethernet communication. 
+o Port Mirroring: In this mode, data traffic from one of the other 2 ports are 
+copied to this port. This allows a connected management tool to monitor 
+and analyse port traffic. 
+o Disable 
+Device Network Ports  
+The Device Network copper ports are used to put the drop on the simple daisy chain loop.  
+They provide: 
+o Connections for Remote IO communications 
+o Cable redundancy 
+The BMECRA31210 adapter exchanges data via an IO Scanner service, which resides in the 
+CPU on the main local rack: 
+• The input data from the remote IO drop is collected and published to the IO scanner 
+• The output modules are updated with the date received from the IO scanner 
+• The protocol used for exchange is Ethernet/IP TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 26 of 86 
+ 
+Page 26 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+• The exchanges are deterministic, which means that the remote IO logic is scanned 
+regularly in a scheduled and predictable manner. 
+ 
+External Features 
+ 
+Figure 3-5: BMECRA31210 physical features 
+1 LED Display 
+2 Rotary Switches 
+3 Service Port (ETH 1) 
+4 Device Network (ETH 2) 
+5 Device Network (ETH 3) 
+ 
+Network Cable Installation 
+The network cables are connected in a loop, i.e. A cable leaves the CPU (ETH 3) port and 
+connects to (ETH2) port on the CRA. The (ETH3) port on the CRA is then connected to (ETH 
+2) on the next CRA module. The final CRA module on the last remote IO drop will have 
+(ETH3) return to the CPU (ETH2). 
+This configuration forms a Ring connection. The RSTP protocol is implemented to establish 
+redundant communications with at least of the paths active to the CPU. 
+ 
+3.2.9 Switchover Causes 
+Any one of the following events will cause a switchover: 
+• The primary PLC has encountered a blocking condition (see Modicon M580 Hardware 
+Reference Manual [43]) and entered the HALT state. 
+• The primary PLC has detected an unrecoverable hardware or system error. 
+• The primary PLC has received a STOP command from Unity Pro or the DDDT. 
+• An application program is being transferred to the primary CPU. 
+• Primary PLC power is turned off. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 27 of 86 
+ 
+Page 27 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+• The following events simultaneously occur: 
+o The primary PLC loses communication to all RIO drops. 
+o The Hot Standby link is healthy. 
+o The standby PLC maintains communication with at least one RIO drop. 
+• The DDDT CMD_SWAP command is executed by either program logic, or an 
+animation table Force Command.  
+• Clicking the HSBY Swap button in the Task tab of the CPU Animation window in Unity 
+Pro 
+• BMENOC0321 Failure or communication loss on this card. This switchover is not 
+executed by the CPU but rather by user code. Therefore, this switch will be executed 
+within the 50-100ms. The code has been written in alignment with the TVDA (Tested, 
+Validated and Documented Architecture – From Schneider Electric). [54] 
+3.2.10 Switchover Execution Time 
+If both the primary PLC and standby PLC are operating normally, the Hot Standby system 
+detects a switchover causal event within 15 ms. The time to complete a switchover can vary 
+from the maximum detection time of 15 ms, up to one MAST cycle. 
+After the switchover, the former standby PLC becomes the primary. In the worst case, the 
+new primary PLC operates with data of scan cycle N, while the outputs have received (from 
+the former primary PLC) data of scan cycle N+1. The new primary PLC re-evaluates outputs 
+beginning with scan N+1. 
+Because the Hot Standby switchover evaluation occurs during the MAST task, some FAST 
+task program execution may be skipped. 
+3.2.11 Switchover effect on the Main IP Address Assignments 
+Distributed equipment uses the Main IP address setting to communicate over an Ethernet 
+network with the primary CPU. On switchover the Main IP address setting is automatically 
+transferred from the former primary CPU to the former standby – now the new primary CPU. 
+Similarly, on switchover the Main IP address + 1 setting is automatically transferred from 
+the former standby CPU to the new standby. 
+In this way, the configured links between the distributed equipment and the primary CPU do 
+not need to be edited in the event of a switchover.  
+This switchover has the same effect on the BMENOC0321 module. These IP addresses are 
+also transferred across thereby ensuring an active connection to the SCADA system.  
+3.2.12 Switchover Effect on Remote Outputs 
+For Remote IO drops, the switchover is bumpless: the state of outputs is not affected by the 
+switchover. During Hot Standby operations, each PLC maintains an independent, redundant 
+owner connection with each RIO drop. Each PLC makes this connection via IP address A or IP 
+address B, depending on the A/B/Clear rotary switch (Section 3.2.4.1) designation for its CPU. TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 28 of 86 
+ 
+Page 28 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+When a switchover occurs, the new primary PLC continues to communicate with I/O via its 
+pre-existing redundant owner connection. 
+NOTE: The switchover may not be bumpless with respect to distributed equipment outputs. 
+Distributed IO include any device outside the Main IO Ring being scanned on Ethernet, such 
+as the ACS1000 VSD or other devices on Modbus Serial which are serviced thought an 
+Ethernet to Serial gateway. This is normally resolved on the end device configuration Hold 
+Time. Setting the Hold time such that in the event of a communication interruption, the 
+outputs are held in state. 
+ 
+3.2.13 Change of Configuration on the Fly (CCOTF) 
+All M580 BMEH58x040 CPUs support CCOTF. CCOTF allows modifications of a Hot Standby 
+primary PLC configuration in RUN mode without causing a stoppage of the system due to the 
+necessity of a Full configuration download. The changes that can be made in the primary PLC 
+are as follows: 
+• Add a discrete or analogue module in a free slot. 
+• Delete a discrete or analogue module. 
+• Modify the configuration and adjustment parameters of a module. 
+The changes that can be made in an Ethernet RIO drop are as follows: 
+• Add and X80 Remote IO drop. 
+• Add a discrete or analogue module in a free slot. 
+• Delete a discrete or analogue module. 
+• Modify the configuration and adjustment parameters of a module. 
+ 
+3.2.14 Diagnostics 
+All hardware related faults which provide LED indication at each module is accessible through 
+the user code of the PLC. Faults such as: IO module, channel, remote link, etc appear in bit 
+format (Boolean Logic 1 or 0 which represents ‘Fault’ or ‘Healthy’). 
+All IO modules and rack information will be packed to words and passed to the SCADA for 
+display. The method of display is to be decided by AVEVA to align with Baseline displays. 
+3.2.14.1 IO Module LED Diagnostics 
+Each IO module is equipped with a display of LEDs on the front panel. This centralises the 
+module information necessary for control diagnostics and maintenance. 
+Depending on the module, the nature of the indication will differ. Digital modules indicate the 
+logic state of each channel, while analogue modules would indicate channel ‘health’ state. 
+Each module has a Red LED indicating a fault. TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 29 of 86 
+ 
+Page 29 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+This panel serves as a local form of diagnostics. All of the information present on this panel is 
+available at a software level for access through Unity Pro and packed for SCADA display. 
+ 
+ 
+Figure 3-6: General Module LED indication 
+ 
+3.2.14.2 CPU LED Panel 
+The front face of the BMEH584040 HSBY CPU uses the following LED panel to diagnose the 
+state of the HSBY system. 
+ 
+ 
+Figure 3-7: CPU LED Panel 
+The purpose of this LED panel is to provide a first level, quick diagnostics for the system or 
+module in specific. 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 30 of 86 
+ 
+Page 30 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+ 
+Table 3-8: CPU LED Panel 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 31 of 86 
+ 
+Page 31 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.2.14.3 Diagnostics via Unity Pro 
+Using the integrated diagnostics in Unity Pro, the local diagnostics on the module front panel 
+are complemented by system diagnostics based on predefined screens at global hardware 
+configuration level, module level and channel level. 
+3.2.14.4 Remote diagnostics 
+Remote diagnostics using a web browser is made possible with the standard web server 
+integrated in the Modicon X80 IO platform (Processor Ethernet port or BMENOC0321 module) 
+using the “ready-to-use” Rack Viewer function. Due to the transparency of Ethernet, it is 
+possible for the MCC engineering station to connect to any PLC CPU across the Pipeline to 
+view diagnostics. There is no transparency however to the X80 IO due to the segregation of 
+the Device network (IO Ring). Diagnostics from IO devices are accessible through the CPU.  
+3.2.14.5 PLC Diagnostics sent to SCADA 
+The following signals will be interfaced between PLC and SCADA. To be reviewed during 
+phase 2. 
+CPU Redundancy status / Backup path available 
+ CPU Fault/Stopped 
+ Hot/Standby status 
+Field PSU Device Fault 
+Remote Racks Drop Status 
+X80 IO Modules Module status 
+Remote Communication Module(CRA) Module Status 
+ Port Status 
+ Ethernet Backplane Status 
+BMENOC321 (SCADA Communication) Module Status on Active module 
+ Port Status on Active module 
+ 
+3.3 Performance 
+3.3.1 Controller Performance 
+The minimum MAST task and FAST task are calculated by the following formulae: 
+• (# of RIO drops using MAST task) /1.5 
+• (#of RIO drops using FAST task / 1.5) 
+• (# of RIO drops using MAST task) / (MAST cycle time) + (# of RIO drops using FAST 
+task) / (FAST cycle time) < 1.5 
+MAST Task TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 32 of 86 
+ 
+Page 32 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+The estimated maximum drops to be used on any given site of the Crude PCS Upgrade 
+Project is sixteen (16). 
+Therefore, the minimum MAST task cycle time could be, (16) / 1.5 = 10.667ms for the 
+MAST task. Despite the possibility of setting a such a fast scan rate, it is estimated that the 
+MAST task will be set to 50ms to cater for Application Response Time (Section 3.3.2). Due to 
+difference in size of applications and the need to keep the CPU load less than 60%, the Mast 
+Task will be set to 50ms as a start. Once the site application has been developed, and 
+assessment will be made on the CPU loading. If the loading is above 60%, increments of 
+25ms will be added in bringing down the CPU Loading up to a maximum of 200ms. 
+FAST Task 
+Where high speed sensing is required, e.g. Pig detection, a Fast Task is used. The Fast Task 
+will be set to 5ms. 
+Configuration requirement set out in Modicon M580 Hot Standby System Planning 
+Guide [42]. 
+(16 / 50) + (2 / 5) = 0.72. This result is less than (<) the guideline requirement of 1.5 
+ 
+3.3.2 Application Response Time 
+Each Ethernet RIO input signal packet travels from a Remote IO drop to the CPU and the CPU 
+sends an output signal back to the RIO drop. The time it takes for the CPU to receive the 
+input signal and effect a change in the output module based on the input is called Application 
+Response Time (ART).  
+ 
+Figure 3-9: Maximum Application Response Time 
+A Missed input scan 6 CPU input jitter 
+B Missed output scan 7 Operation of application logic (1 
+Scan) 
+1 Input turns ON 8 CPU output jitter 
+2 CRA drop processing time 9 Network delay 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 33 of 86 
+ 
+Page 33 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3 CRA input Request Packet Interval(RPI) rate 10 Network jitter 
+4 Network delay 11 CRA drop processing time 
+5 Network jitter 12 Output applied 
+Table 3-4: Maximum Application Response time Cycle 
+ 
+To estimate the maximum ART for the Crude PCS Upgrade Project, the following information 
+is used: 
+• CRA->Scanner RPI  
+• 2*CPU_Scan (PLC Scan) 
+• 8.8ms (A constant value representing maximum CRA processing time). 
+The Estimated Maximum ART for a given station with a periodic scan of 50ms: 
+CRA_RPI(25ms) + (2*50ms) + 8.8ms = 133.8ms 
+ 
+3.3.3 Availability 
+For PLC System Availability calculations, please refer to PLC System Architecture Failure and 
+Recovery Analysis document [27]. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 34 of 86 
+ 
+Page 34 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4 System Architecture 
+3.4.1 Ring Topology with HSBY 
+ 
+Figure 3-10: Typical Remote IO Ring Topology 
+ 
+Figure 3-11: TPL System Typical 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 35 of 86 
+ 
+Page 35 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.2 On-Site Engineering Stations 
+Unity Pro software (one licence) is installed on the Engineering Server at the NOC, and on the 
+Production Host virtual servers on the local stations (one licence per site). A Facility Licence is 
+provided (100 Licences).  
+ 
+ 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 36 of 86 
+ 
+Page 36 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3 X80 Remote IO 
+3.4.3.1 IO Assignment and Grouping Philosophy  
+The Following IO modules will be used where necessary: 
+• Digital input modules 
+• Digital output modules 
+• Analogue input modules 
+• Analogue output modules 
+• High speed counter module 
+On average, 25% additional IO is added for spare capacity. Spare slots are also ensured to 
+provide capacity for future expansion. 
+Each mainline pump set IO will be allocated to separate racks where possible.   
+Devices will be ordered on a card in device group order and then sequential tag order, where 
+possible.  
+ 
+3.4.3.2 Digital Inputs 
+BMXDDI3202k 
+The 32channel modules standardised on for the Crude PCS Upgrade Project is the 
+BMXDDI3202k. The IO modules are housed in plastic cases which provide IP20 protection for 
+all the electronic parts. 
+The diagram below shows a 40-pin discrete module. 
+ 
+Figure 3-12: 32 Channel Digital Input/Output Module 
+ 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 37 of 86 
+ 
+Page 37 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Number Description 
+1 
+Rigid structure which supports 
+and protects the electronic 
+card. 
+2 
+Module reference label 
+Note: A label is also visible on 
+the right-hand side of the 
+module. 
+3 Channel status display panel. 
+4 
+40-pin connector, used to 
+connector sensors or pre-
+actuators. 
+Table 3-13: Description of 32 Channel Digital Input Module 
+ 
+3.4.3.2.1 Specifications 
+BMXDDI3202k 
+Number of channels 32 Digital Inputs 
+Range 24VDC 
+Insulation Inputs opto-isolated per group of 16 channels 
+IEC61131-2 
+compliance 
+Type 3 
+Logic Positive (sink) 
+Proximity sensor 
+compatibility 
+2-wire DC and 3-wire PNP proximity sensor (IEC 947-
+5-2 standard compliant) 
+Response time 4 ms, 7 ms(Max) 
+Type of Interface Connection via 40-way connector with preassembled 
+cord sets 
+Protection of inputs Requirement: External 1x 0.5A fast blow fuse per 
+group 
+Reverse polarity 
+protection 
+Yes 
+Isolation Isolation 500VDC between groups of channels 
+Table 3-14: Basic Specifications of BMXDDI3202k TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 38 of 86 
+ 
+Page 38 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+BMXDDI1602 
+The 16channel Digital Input modules standardised on for the Crude PCS Upgrade Project is 
+the BMXDDI1602. These IO modules are housed in plastic cases which provide IP20 
+protection for all the electronic parts. 
+The diagram below shows a 20-pin discrete module and 20-pin terminal block. Screw 
+terminals are used throughout all connections. 
+ 
+BMXDDI1602 
+ Inputs 
+Number of 
+channels 
+16 Digital Inputs  
+Range 24VDC  
+Isolation 16 Optically Isolated inputs and 1 
+common  
+IEC61131-2 
+compliance 
+Type 3 
+Logic Positive (Sink) 
+Proximity 
+sensor 
+compatibility 
+2-wire DC and 3-wire PNP proximity 
+sensor (IEC 947-5-2 standard 
+compliant) 
+Response time 4 ms, 7 ms(Max) 
+Type of 
+Interface 
+Connection via removable 20-way 
+terminal block 
+Protection Requirement: External 1x 0.5A fast 
+blow fuse per group 
+Reverse 
+polarity 
+protection 
+Yes 
+Isolation 500VDC between groups of inputs and 
+outputs 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 39 of 86 
+ 
+Page 39 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.2.2 Module Density 
+32 channel modules have been standardised on by TPL for all input modules located in the 
+PLC, Metering and LV Panels. 16 channel modules are used in the MV panels where space 
+constraints exist.  
+32 channel modules have been selected in order to standardise on 40pin connectors and 
+Telefast base units. 
+3.4.3.2.3 Wiring connections 
+ 
+Figure 3-15: Wiring Connection DDI1602 
+ 
+Figure 3-16: Wiring Connection DDI3202k 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 40 of 86 
+ 
+Page 40 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+ 
+Figure 3-17: Input Circuit Diagram for DDI1602 and DDI3202k 
+ 
+ 
+3.4.3.2.4 TELEFAST ABE7 Terminal Blocks General Description 
+The TELEFAST system is a group of products which enables discrete input modules to be 
+quickly connected to operational components.  
+The specific model of TELEFAST ABE7 Terminal Block for the PCS Upgrade Project is to be 
+proposed below have been chosen.  
+ 
+Figure 3-18: 40-pin connector to TELEFAST Block 
+The principle for identifying the connection interface bases for 8/12/16-channel discrete IO is 
+as follows: 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 41 of 86 
+ 
+Page 41 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 3-19: TELEFAST Block Identification 
+ 
+ABE-7H16S21 
+The ABE-7H16S21 is proposed for Digital Inputs on the Crude PCS Upgrade Project. This base 
+offers 16 inputs with an isolator and LED per channel. 
+ 
+ 
+Figure 3-20: ABE-7H16S21 Connections 
+3.4.3.2.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS)  
+IS and Non-IS IO have been combined. Further information to follow beyond the FEED phase.  
+ 
+ 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 42 of 86 
+ 
+Page 42 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.3 Digital Outputs 
+BMXDD03202k 
+The 32channel modules standardised on for the Crude PCS Upgrade Project is the 
+BMXDD03202K. The IO modules are housed in plastic cases which provide IP20 protection for 
+all the electronic parts. 
+The diagram below shows a 40-pin discrete module. 
+ 
+BMXDDO1602 
+16 channel Digital Output modules BMXDDI1602 are used in the MV panels due to space 
+constraints as described above. 
+ 
+Figure 3-21: 16 Channel Digital Module 
+ 
+ 
+Figure 3-22: 32 Channel Digital Module 
+ 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 43 of 86 
+ 
+Page 43 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Number Description 
+1 Rigid structure which supports 
+and protects the electronic card 
+2 
+Module reference label 
+Note: A label is also visible on 
+the right-hand side of the 
+module. 
+3 Channel status display panel 
+4 
+40-pin connector, used to 
+connector sensors or pre-
+actuators 
+Table 3-23: Description of  Channel Digital Output Module 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 44 of 86 
+ 
+Page 44 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+3.4.3.3.1 Specifications 
+ 
+BMXDDO1602 
+Number of 
+channels 
+16 Outputs 
+Range 24VDC 
+Insulation Outputs insulated per group of 16 
+channels 
+Current 0.5A 
+Logic Positive 
+Overload 
+protection 
+Outputs protected against short-
+circuits and overloads with automatic 
+or controlled reactivation and fast 
+electromagnet demagnetisation circuit. 
+Response time 1.2ms 
+Type of 
+Interface 
+1 x removable 20-pin terminal block  
+Protection of 
+outputs 
+Requirement: External 1x 6.3A fast 
+blow fuse.  
+Protection of 
+DC outputs 
+Active transistor outputs can withstand 
+overloads, short-circuits, reverse 
+polarity and inductive over-voltage. 
+Isolation 500VDC between groups of channels 
+Table 3-24: Basic Specifications of BMXDDO1602 
+ 
+BMXDDO3202K 
+Number of 
+channels 
+32 Outputs 
+Range 24VDC 
+Insulation Outputs insulated per group of 16 
+channels 
+Current 0.1A 
+Logic Positive TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 45 of 86 
+ 
+Page 45 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Overload 
+protection 
+Outputs protected against short-
+circuits and overloads with automatic 
+or controlled reactivation and fast 
+electromagnet demagnetisation circuit. 
+Response time 1.2ms 
+Type of 
+Interface 
+1 x 40-pin connector  
+Protection of 
+outputs 
+Requirement: External 1x 2A fast blow 
+fuse per group of 16.  
+Protection of 
+DC outputs 
+Active transistor outputs can withstand 
+overloads, short-circuits, reverse 
+polarity and inductive over-voltage. 
+Isolation 500VDC between groups of channels 
+Table 3-25: Basic Specifications of BMXDDO3202K 
+ 
+3.4.3.3.2 Module Density 
+32 channel modules have been standardised on by TPL for all output modules located in the 
+PLC, Metering and LV panels. 16 channel modules are used in the MV panels where space 
+constraints exist.  
+32 channel modules have been selected in order to standardise on 40pin connectors and 
+Telefast base units. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 46 of 86 
+ 
+Page 46 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.3.3 Wiring connections 
+ 
+ 
+Figure 3-26: Wiring connection of BMXDDO1602 
+ 
+ 
+Figure 3-27: Wiring connection of BMXDDO3202 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 47 of 86 
+ 
+Page 47 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 3-28: Output Circuit Diagram of BMXDDO1602 and BMXDDO3202 
+ 
+3.4.3.3.4 Telefast ABE7 Terminal Blocks – ABE-7P16T210 
+The ABE-7P16T210 is proposed for Digital Outputs on the Crude PCS Upgrade Project. This 
+base offers one LED indication per potential free contact (N.O.). The output contacts are 
+potential free with a common per channel. This base supports the use of a combination of 
+electro-mechanical and solid-state relays. The standard mechanical relays offering a 5A rating 
+on the contact is to be used. 
+ Note: Solid State relays are optional but not recommended which provide a 2A rating on the 
+contact. 
+ 
+  
+Figure 3-29: Wiring connection of ABE7P16T210 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 48 of 86 
+ 
+Page 48 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.3.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) 
+IS and Non-IS IO have been combined. All IS IO will use Barriers as specified in section 3.4.6. 
+3.4.3.4 High Speed Counter module 
+ 
+The BMCEHC0800 counting module is a standard format module that enable pulses from a 
+sensor to be counted at a maximum frequency of 10kHz. 
+The sensors used on each channel may be: 
+• 24VDC two-wire proximity sensors 
+• 24VDC three-wire proximity sensors 
+• Incremental signal encoders with 10/30 VDC output and push-pull outputs. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 49 of 86 
+ 
+Page 49 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.4.1 Specifications 
+BMXEHC0800 
+Module Type 8 Channel High Speed Counter 
+Counter size 16 bits 
+Maximum 
+frequency at 
+counting inputs 
+10kHz 
+Number of 
+inputs per 
+counting 
+channel 
+2 inputs in single mode 
+3 inputs in special dual phase mode 
+Input 
+Compatibility 
+2-wire/3-wire proximity sensor 
+19.2..30VDC 
+Input Voltage 24VDC Type 3 
+Cycle Time 5ms 
+Isolation 1500V for 60s 
+Table 3-30: Basic Specifications of BMXEHC0800 
+3.4.3.4.2 Module Density 
+The BMXEHC0800 8 Channel high speed counter module has been standardised for use on 
+the Crude PSC Upgrade Project where needed. This module supports inputs up to a maximum 
+of 10kHz. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 50 of 86 
+ 
+Page 50 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.4.3 Wiring connections 
+ 
+Figure 3-31: Typical wiring connection of BMXEHC0800 
+3.4.3.4.4 Removable Terminal Blocks 
+Screw clamp terminals are used on the BMXEHC0800 module. 
+ 
+ 
+Figure 3-32: Screw Clamp Terminal Blocks 
+3.4.3.4.5 Telefast ABE7 Terminal Blocks 
+Telefast ABE7 terminal blocks are not available on High speed counter modules. Signals will 
+be wired to terminal rails using SAKR 2.5 knife-edge Terminals.  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 51 of 86 
+ 
+Page 51 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+3.4.3.5 Analogue Inputs 
+The BMXAMI0810 is a high density analogue input module with 8 isolated channels. This 
+module is used in conjunction with sensors or transmitters; it performs monitoring, 
+measurement and continuous process control functions. 
+This module offers the following range for each input according to the selection made during 
+configuration: 
+• +/- 10 V 
+• 0..10 V 
+• 0..5 V / 0..20 mA 
+• 1..5 V / 4..20 mA 
+• +/- 5 V / +/-20mA 
+ 
+3.4.3.5.1 Specifications 
+BMXAMI0810 
+Module Type 8 High level isolated fast inputs 
+Nature of 
+inputs 
+Voltage/Current (250Ω internally protected 
+resisters) 
+Display 
+Resolution 
+15 bit +Sign 
+Acquisition 
+cycle time: 
+9ms for 8 Channels 
+Fast (periodic 
+acquisition for 
+the declared 
+channels used) 
+1ms + 1ms x number of channels used 
+Default 
+(periodic 
+acquisition for 
+all channels) 
+9ms 
+Isolation Between Channels: 300VDC 
+Between Channel and Bus: 1400VDC 
+Between Channel and Ground: 1400VDC 
+Wire-break 
+detection 
+Yes 
+Short-circuit 
+protection 
+Yes TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 52 of 86 
+ 
+Page 52 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Reverse polarity 
+protection 
+Yes 
+Total Error +/- 0.1% 
+Max load 
+impedance  
+250Ω 
+Table 3-33: Basic Specifications of BMXAMI0810 
+3.4.3.5.2 Module Density 
+The BMXAMI0810 is an 8 Channel module that has been standardised on by TPL for use on 
+the Crude PSC Upgrade Project where needed. 
+3.4.3.5.3 Wiring connections 
+ 
+ 
+Figure 3-34: Wiring connections of BMXAMI0810 
+ 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 53 of 86 
+ 
+Page 53 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+3.4.3.5.4 Telefast ABE7 Terminal Blocks 
+ 
+Figure 3-35: Wiring connections of ABE-7CPA02 
+The ABE7CPA02 Telefast base unit is used for analogue inputs modules. This module allows 
+connection on a screw terminal block of 8 current/voltage IO. 
+ 
+3.4.3.5.5 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) 
+IS and Non-IS IO have been combined. Further information to follow beyond the FEED phase. 
+ 
+3.4.3.6 Analogue Outputs 
+The BMXAMO0410 has been standardised on for the PCS Upgrade project for all analogue 
+outputs. The BMXAMO0410 is a high density analogue output module fitted with four isolated 
+channels. It offers the following ranges for each output: 
+• Voltage: +/- 10 V 
+• 0..20 mA 
+• 4..20 mA 
+3.4.3.6.1 Specifications 
+BMXAMO0410 
+Module Type 4 High level Fast Outputs 
+Nature of inputs Voltage or Current configured by software: 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 54 of 86 
+ 
+Page 54 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
++/- 10V 
+0-20mA 
+4-20mA 
+Digital/Analogue 
+convertor 
+resolution 
+15Bit +Sign 
+Output refresh 
+time 
+1ms 
+Types of 
+Protection 
+From short circuits and overloads (Voltage output) 
+Wirebreak indication 
+Isolation Between Channels: 750VDC 
+Between Channel and Bus: 1400VDC 
+Between Channel and Ground: 1400VDC 
+Measurement 
+error 
+<=0.25% of full scale 0..60°C 
+0.1% of full scale 25°C 
+Load impedance 
+ohmic 
+>=1000 Ohm +/-10V 
+<= 500  0..20mA 
+<= 500  4..20mA 
+Total Error +/- 0.18% Current 
+Table 3-36: Basic Specifications of BMXAMO0410 
+3.4.3.6.2 Module Density 
+The BMXAMO0410 is a 4 Channel module that has been standardised on by TPL for use on 
+the PSC Upgrade Project where needed. 
+3.4.3.6.3 Wiring connections 
+ 
+Figure 3-37: Wiring connections of BMXAMO0410 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 55 of 86 
+ 
+Page 55 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.3.6.3.1 Telefast ABE7 Terminal Blocks 
+The ABE7CPA21 Telefast base unit with the cable BMXFCA 150/300/500 is used for analogue 
+outputs modules. This module allows connection on a screw terminal block of 8 
+current/voltage IO.  
+ 
+Figure 3-38: Wiring connections of ABE-7CPA21 
+3.4.3.6.3.2 Intrinsically Safe (IS) and Non-Intrinsically Safe (Non-IS) 
+ 
+IS and Non-IS IO have been combined. Refer to section 3.4.6 for selected Barriers. 
+3.4.4 Fynnlands Site 
+The Fynnlands site will be the only site on the PCS Upgrade Project with an initial installation 
+comprising of ‘Hardened’ PLC Hardware. 
+Hardened equipment is the ruggedized version of standard equipment that can operate in 
+extended temperature ranges and in dirty or corrosive environments. There are hardened 
+versions of several of the CPUs, backplanes, and power supplies, as well as other 
+components, in the M580 system. These components are listed below in Table 3-39. 
+The standard temperature range for M580 equipment is 0...60 °C. Hardened equipment can 
+operate at extended temperature range: –25...70 °C. 
+These modules are interchangeable with standard modules without the need for any form of 
+configuration changes. 
+BMEH584040C M580 CPU redundant family 40 with remote 
+and distributed I/O - Coated 
+BMECRA31210C X80 Performance Ethernet Drop adapter, 
+Ethernet Backpane - Coated 
+BMENOC0321C M580 I/O Scanner Module, IP Forwarding, 
+Ethernet/IP & Modbus TCP, 3 ports - 
+Coated 
+BMEXBP0400H PLC 4 slots Ethernet backplane hardened 
+BMEXBP0800H PLC 8 slots Ethernet backplane hardened 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 56 of 86 
+ 
+Page 56 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+BMXAMI0810H  X80 Analog Input Module, High Speed, 8 
+channels, isolated - Hardened 
+BMXAMO410H X80 Analog Output Module, 4 channels, 
+isolated - Hardened 
+BMXCPS3500H X80 AC Power Supply Module, 100…240 V 
+AC, 36W - Hardened 
+BMXDDI1602H X80 Digital Input Module, 16 channels, 24 V 
+DC, Positive (sink) - Hardened 
+BMXDDI3202KH X80 Digital Input Module, 32 channels, 24 V 
+DC, Positive (sink) - Hardened 
+BMXDDO1602H X80 Digital Output Module, 16 channels, 24 
+V DC, Positive - Hardened 
+BMXDDO3202KC X80 Digital Output Module, 32 channels, 24 
+V DC, Positive - Coated 
+Table 3-39: Hardended / Conformally Coated Modules 
+ 
+3.4.5 Field Power Supplies 
+The Phaseo Universal electronic switch mode power supply for Schneider Electric is designed 
+to provide the DC voltage necessary for the PLC automation systems described above.  
+The ABL8RP Universal range will be used and sized accordingly during detail engineering.  
+ 
+ 
+ 
+ 
+  Secondary  
+Part Number Input Voltage 
+Output 
+Voltage 
+Nominal 
+Power 
+Nominal 
+Current 
+Conforming 
+Standard 
+ABL8RPM24200 
+100…120V AC 
+200…500V AC 
+(Single Phase) 
+-15%, +10% 
+50/60Hz 
+24…28VDC 480W 20A IEC/EN 61000-3-2 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 57 of 86 
+ 
+Page 57 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 3-40: Phaseo ABL8RP Power Supply.  
+Redundancy Module for Power Supplies 
+Redundancy of power supplies is offered with the use of the ABL8RED24400. This unit allows 
+the paralleling and redundancy of two of the power supplies specified above to ensure 
+uninterrupted operation of the application excluding AC line failure and application overloads. 
+ 
+Figure 3-41: ABL8RED24400 Redundant Power Supply Module 
+ 
+ 
+Figure 3-42: ABL8RED24400 Wiring diagram 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 58 of 86 
+ 
+Page 58 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+3.4.6 Galvanic Isolators 
+TPL has standardised on Pepperl+Fuchs Galvanic isolators for all IS loops as follows: 
+• Analogues: HiD2022 (Dual Channel) 
+• Digitals: HiD2844 (Switch Amplifier - 4 Channel Isolator) 
+• Metering Panel: Zener: Z-961 (2 Channel)  
+• PLC Panels: Zener: Z779 (2 Channel) 
+• Blanks: HiD2000( Blank Place Holders) 
+• Termination Board(Backplane) 8 Slot: HiDTB08-SCT-99C-SC-RA 
+• Transmitter Power Supply: KFD2-CRG2-Ex1.D 
+Optional Modules 
+• HiATB01-HART-2X16: HART communication board for 2-channel module 
+• HiDMux2700: HART multiplexer master 
+• HiACA-UNI-FLK34-*M* : HART connection cable 
+ 
+3.4.7 Panel Specifications 
+Panel Specification – refer to Panel Specification document [30] and [31] 
+ 
+3.4.8 PLC & LAN Architectures  
+3.4.8.1 Typical Pump Station Architecture 
+Refer to the PLC LAN Architecture Typical Pump Station drawing[11]. 
+3.4.8.2 Typical Booster Station Architecture 
+Refer to the PLC LAN Architecture Typical Booster Station drawing [12] to be referenced. 
+3.4.8.3 Fynnlands Station Architecture 
+Refer to the PLC LAN Architecture Fynnlands Intake Station drawing [10]. 
+3.4.8.4 Coalbrook Architecture 
+Refer to the PLC LAN Architecture Coalbrook drawing [13]. 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 59 of 86 
+ 
+Page 59 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.9 Communication and System Interfaces 
+The following interfaces are excluded from the PLC system: 
+• MIS 
+• Existing ATMOS PIPE LDS 
+• Bentley Nevada MMS System 1 
+Refer to SCADA FDS for further information. 
+3.4.9.1 Interfaces 
+3.4.9.1.1 Interface 1: OASyS SCADA 
+The interface between the OASyS SCADA system and the PLC system is described within the 
+document SCADA/PLC Communication Plan [5] 
+3.4.9.1.2 Interface 3: Metering 
+For details on the Metering interface, refer to the Metering FDS [3]. 
+3.4.9.1.3 Interface 4: Fire and Gas 
+The Fire System(s) are controlled locally from the Fire Panels located on site. Limited 
+interfacing is provided between the Fire System/s and the Process Control System for 
+alarming purposes only. 
+Two types of interface exist to Fire & Gas systems installed on TPL sites: 
+1. Hardwired Interface of signals direct to PLCs installed in the respective PLC Panels  
+2. Communications interface to Det-Tronics Fire and Gas systems over Modbus 422/485. 
+3.4.9.1.4 Interface 5: ABB ACS1000 MV Variable Speed Drive 
+The present interface to the ABB ACS1000 MV VSD is via Profibus DP. Profibus DP 
+communication is possible on the M580 PLC as described in section 3.5.10.2.  
+Profibus is possible with the ACS1000 via the NPBA-12 module supplied by ABB. The NPBA12 
+module is a profibus slave which interfaces with the drive via a optical fibre connection. With 
+the use of this module, it is possible to:  
+• Monitor the drive 
+o Read and adjust drive parameter values 
+o Read status information and actual values from the drive 
+o Read and clear the contents of the fault log and save it to a file 
+• Control the Drive 
+o Give control commands (Start, Stop, Run enable, etc) to the drive TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 60 of 86 
+ 
+Page 60 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+o Feed a motor speed to the drive 
+o Reset a drive fault 
+ 
+Figure 3-43: ABB NBA-12 Profibus interface module 
+ 
+3.4.9.1.5 Interface 6: Bentley Nevada Machine Monitoring System 
+The interface between the Bentley Nevada 3500 Rack to PLC and from the PLC to System 1 
+server is RS422. This is not supported by the current hardware and the use of a convertor will 
+need to be investigated in future.  
+3.4.9.1.6 Interface 7: Tank Gauging System Heads 
+Communications interface directly to the Tank Gauging System over Modbus 485. TPL 
+currently has an installed base of: 
+• Rosemount Raptor Radar Level Tank Gauging system, comprising of 5900S Radar 
+Level Gauge, 2240S Temperature sensor, and 2410 Tank Hub. 
+• SAAB/Rosemount RTG3950 Tank Gauging System. 
+3.4.9.1.7 Interface 8: UPS Interface 
+Hardwired Interface of two UPS volt-free contacts will be required: one to initiate 
+server/workstation shutdown, and another to alarm a UPS fault. 
+3.4.9.1.8 Interface 9: Safety Instrumented Systems 
+Two Safety instrumented functions have been identified within TPL Pipeline infrastructure viz:  
+• Tank overfill protection 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 61 of 86 
+ 
+Page 61 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+• Line over-pressure protection 
+Safety protection will be implemented using a stand-alone Pepperl+Fuchs KFD2-CRG2-EX1.D 
+trip amplifier relay. This relay is rated SIL 2 and has the following functionality: 
+• IS rated 4-20mA input 
+• 4-20mA output repeated to the PLC for indication purposes 
+• 2 Programmable relay outputs. One for trip function and other for PLC indication and 
+alarming. 
+For details on SIL FMEDA assessment refer to PNF document FS-013PF20B, 7 Oct 2008. 
+In addition, the Weidmüller SCS 24VDC P1SIL3DS M safety relay will be used in the MV 
+panels to trip the electrical circuit.  
+3.4.9.2 Profibus Remote Master 
+The ABB ACS1000 MV Drive currently utilise Profibus for communication.  
+The Modicon M580 incorporates the Profibus protocol by means of a gateway device: Profibus 
+Remote Master (PRM). 
+The PRM is a standalone module designed to provide Profibus DPV0 and DPV1 master 
+capability to the M580 PLC range amongst others. It is integrated in the PLC architecture as a 
+Modbus TCP slave. 
+The Profibus configuration is done using the FDT/DTM technology. 
+The PRM module can be mounted standalone on DIN rail, grid or panel. 
+Key features of the PRM module: 
+• Provides transparent access from Unity Pro to the Profibus devices. 
+• Profibus DPV0 and DPV1 Master 
+• Up to 125 Profibus devices with a total of less than 4Kbytes input data and 4Kbytes 
+output data. 
+• 2 Ethernet ports with an embedded switch 
+• Fast Device Replacement (FDR) 
+ 
+Figure 3-44: Profibus Remote Master 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 62 of 86 
+ 
+Page 62 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.9.3 Modbus Serial 
+The BMXNOM0200 Serial link module is used for Modbus serial communication on the PCS 
+upgrade project.  
+The BMXNOM0200 module provides 2-way asynchronous serial communication. Modbus 
+Serial (master or slave) and Character Mode communications is supported. This module is a 
+simple-format, dedicated module which is installed on the Remote IO rack. Two modules can 
+be installed on a remote drop. A card will be installed on the Remote Drop closest to where it 
+is needed. Multiple cards may be need on a site based on the number of device that need 
+connection. 
+ 
+Figure 3-45: BMXNOM0200 Modbus Serial Module 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 63 of 86 
+ 
+Page 63 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+3.4.10 Time Synchronization 
+The PLC will be synchronised to the local Domain Controller as a primary. Secondary will be 
+the MCC Domain Controller. 
+Time synchronization is described in detail in the SCADA Functional Design Specification 
+document [2]. 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 64 of 86 
+ 
+Page 64 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4 SOFTWARE 
+4.1 Unity Pro 
+4.1.1 Programming Platform 
+Unity Pro (now known as EcoStruxure Control Expert) is the programming platform used to 
+configure and program and the Modicon M580 PLC.  
+The XL package is used on the PCS upgrade project as it is required to configure and 
+program the M580 HSBY system. 
+ 
+General Program Structure 
+Central to the Unity Pro application is the Project Browser. The project browser is used for 
+navigation, displaying and organising all project parameters. The view can be shown either as 
+structural (topological) view and/or functional view.  
+TPL programs will be structured using 1 MAST (50ms) task. The MAST task will contain all of 
+the necessary sections for control of the specific site. Each section will belong to a Functional 
+group. Many associated sections can belong to one Functional Group. For example, a 
+Launcher Functional Group may have multiple sections of code. Details on the Functional 
+Groups will be determined during the Development phase of the project. 
+In addition to the MAST TASK, a single FAST (5ms) task is configured. The sections within the 
+FAST task are related to functions that require a faster response time, e.g. Pig Detection. 
+ 
+Figure 4-1: Unity Pro – Example of Structural and Functional View 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 65 of 86 
+ 
+Page 65 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Structural View 
+The project browser offers the following features in the structural view: 
+• Creation and deletion of elements 
+• The section symbol shows the section programming language and if it is protected 
+• View the element properties 
+• Creation of user directions 
+• Launching the different editors 
+• Start the import/export function 
+Functional View 
+The project browser offers the following features in functional view: 
+• Creation of functional modules 
+• Insertion of sections, animation tables etc. using Drag and Drop from the structural 
+view. 
+• Creation of sections 
+• View the elements properties 
+• Launching the different editors 
+• The section symbols show the section programming language and other attributes. 
+ 
+4.1.2 Identification Standards 
+4.1.2.1 Project Name 
+Every PLC project in the PCS Upgrade Project will be configured using the site name within 
+the Unity Pro application hierarchy for the purpose of uniquely identifying software 
+applications. This is independent of the chosen file naming standard. Naming conventions are 
+defined in PCS Naming Standards Document[28] 
+4.1.2.2 Station Revision Management. 
+The second section of every PLC application will be a ST type. This section will not be a 
+functional section but rather, will be used as a comment space for Station Revision tracking. 
+Changes made to the application are to be commented on with Date/Time and details of the 
+change. 
+ 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 66 of 86 
+ 
+Page 66 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.1.2.3 Remote Rack Labelling  
+Remote racks within the EIO software configuration are labelled in alignment with 
+Architecture drawings and Panel Labelling.  
+4.1.2.3.1 Panel Numbers are labelled as follows: 
+Panel Identifier: =aaPPPxx 
+Location Identifier: +aaPPPxx 
+where 
+aa = Station Number (e.g. CBK = 17) 
+PPP = PLC for PLC Panel, MET for Metering Panel, VSD for VSD Panel, RR for Remote IO tier 
+in remote rooms, RL for Remote IO cubicle/tier in LV Panel, RM for Remote IO cubicle in MV 
+Panel 
+xx = Unique No, integer from 1 to 9. 
+ 
+4.1.2.3.2 PLC CPU Hot/Standby racks 
+The Host Standby Racks will be labelled 'PLCxy' 
+ Individual slots within the Host Standby Racks will be labelled: PLCxyz 
+ where 
+x = PLC No, integer from 1 to 9 
+y= Rack drop no, alpha from A to Z. (There will only be two racks - A and B for Host Standby 
+Racks)  
+z = Slot No, integer from 0 to 7 (8 slot backplanes are used). Slots are numbered 
+sequentially, starting from zero. 
+4.1.2.3.3 Remote IO racks 
+Remote IO Racks will be labelled: Ruxyz 
+ where 
+u = P for PLC Panels, F for Metering Panels, L for LV Panels and M for MV Panels 
+x = PLC No, integer from 1 to 9 
+y = Rack drop no, alpha from A to Z. Drops are labelled sequentially in each panel, starting 
+from A. 
+z = Slot No, integer from 0 to 7 (8 slot backplanes are used). Slots are numbered 
+sequentially, starting from zero. 
+ 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 67 of 86 
+ 
+Page 67 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-2: Remote Rack configuration and labelling 
+ 
+4.1.3 Software Naming Standard 
+Refer to Software Naming standards document [28] 
+4.1.4 Unity Pro Programming Languages 
+Unity Pro supports all of the IEC61131-3 application languages for the M580 HSBY CPUs. 
+Each language has its place and strengths. As such, not all languages will be used with on 
+the PCS Upgrade Project. All PLCs will be programmed using a combination of FBD, ST and 
+SFC. The majority of code will implement FBD.  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 68 of 86 
+ 
+Page 68 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Table 4-1: M580 Supported Programming Languages 
+4.1.4.1 Function Block Diagram 
+Function Block Diagram (FBD) is the chosen standard for programming of all PLCs. All 
+sections within a PLC program will use on FBD with exception of Sequences and Hardcoded 
+settings. These use SFC and ST respectively. Smaller sequences could use Sequencing FBD 
+and will be decided based on the requirements and prescription from the PLC Coding 
+Standards Document [29]. The FBD editor is used to provide a graphical programming 
+interface: 
+ 
+Figure 4-2: Example of FBD representation 
+The objects of the FBD programming language help to divide a section into a number of:  
+• Elementary Functions (EFs) 
+• Elementary Function Blocks (EFBs) 
+• Derived Function Blocks (DFBs) 
+• Procedures 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 69 of 86 
+ 
+Page 69 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+• Subroutine calls 
+• Jumps 
+• Links 
+• Actual Parameters 
+• Text Objects to comment the logic 
+ 
+4.1.4.2 Structured Text 
+The Structured Text language is also used within the PCS Upgrade Project. The use of this 
+language is generally limited to within sections of DFBs however, Hardcoded limits, settings 
+or parameters that do not change frequently will also use the ST language at MAST task 
+section level. Structured Text is especially used for mathematical calculation and for 
+processing repetitive instructions (Loops).  
+ 
+  
+ 
+Figure 4-3: ST representation 
+ 
+4.1.4.3 Sequential Function Chart (SFC) 
+SFC will be used to control all sequences required in the PCS Upgrade Project. Sequences are 
+typically initiated/commanded from the SCADA or instances within code. 
+Sequential control is created in Unity Pro from SFC sections (top level), transition sections 
+and action sections. 
+The SFC sections are only allowed in the Master Task of the project. SFC sections cannot be 
+used in other tasks or DFBs. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 70 of 86 
+ 
+Page 70 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-4: SFC representation 
+4.1.5 Software Coding Standards 
+An object-oriented methodology is used in the PLC software standard allowing flexible sizing 
+of the system (from smaller booster pumps sites to larger delivery stations), reduced fault 
+finding time and improved ease of device addition. 
+Function blocks are designed in a manner that the functions they implement are cumulative. 
+This way, specific ‘optional service’ functionality can be added on to many ‘core service’ 
+functions. 
+For example, three function blocks are connected to each other to provide the necessary 
+functions to set up an on-off motor with interlocking and maintenance. A “Control” block 
+(Core service) provides on-off motor functionality. An “Interlock” block (optional service) can 
+be integrated to achieve interlocking functionality. In addition a “Device Maintenance” block 
+(optional service) can be integrated to add maintenance functionality (number of operation 
+and run hours). A Valve “Control” block (Core service) could also achieve interlocking and 
+maintenance properties using this approach. 
+4.1.6 Derived Function Blocks 
+A Derived Function Block(DFB) is a type of function block that is defined by the user. TPL DFB 
+blocks are developed using the following languages: 
+• Function Block Diagram (FBD) 
+• Structured Text (ST) 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 71 of 86 
+ 
+Page 71 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+The use of DFB types in application code makes it possible to: 
+• Simplify the design and entry of the of program 
+• Make the program easier to read 
+• Make it easier to debug 
+• Reduce the amount of code generated 
+• Test and validate functionality 
+• Reuse proven functionality throughout code 
+Control Modules as described in the PCS Control Module Specification [15] make use of DBFs. 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 72 of 86 
+ 
+Page 72 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+4.1.6.1 Derived Function block construction 
+All Derived function blocks are constructed in a similar format. Based on the functionality of 
+the block, the process sections could vary slightly.  
+Section Name Language Description 
+Revision ST 
+Section used to track revision 
+control of the block. In addition to 
+providing a text space to document 
+revision history, an output pin of 
+String type is used to display the 
+revision number when connected to 
+the PLC. 
+Unpack FBD 
+Section used to unpack data coming 
+in to the block via the SCADA DDT or 
+other DDT  
+Input_map ST 
+Section used to map and route 
+between physical input image 
+coming in to the block, with 
+internally simulated feedback 
+signals.  
+Process FBD 
+Section(s) to implement the specific 
+function of this block. All code needs 
+to be put in to one section. Multiple 
+sections could be used to fulfil a 
+process function. 
+Status FBD Section used to manage statuses 
+generated by the block 
+Simulation ST/FBD 
+Section used to perform a 
+simulation of behaviour. Typically 
+field inputs are substituted with 
+simulated field inputs such that the 
+Process code is executed as if in the 
+field. 
+Pack FBD 
+Section is used to pack status 
+information to SCADA DDT and 
+information DDT. Outputs are also 
+driven in this part of code. 
+Table 4-5: Typical DFB construction 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 73 of 86 
+ 
+Page 73 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-6: Example DFB construction 
+ 
+Note: All DFBs which are placed in simulation mode will have the Input map selected to use 
+internal simulated feedbacks (and not Field IO). This is not true with outputs, i.e. ALL output 
+functions will be driven as per DFB Block function. It is therefore imperative to ensure that 
+NO DFB is placed in simulation mode on ANY active plant (e.g. Valve open/close outputs will 
+be driven if a valve block is in simulation mode with simulated feedback). This is the reason 
+the Sim_En (Used to enable simulation mode) is placed as a Pin at the bottom of the DFBs. It 
+can be seen at a glance that this Pin should have system variable: sys.Simulation_Enabled 
+which is RED (Logic Low).  
+Simulation Enable/Disable is applied to all blocks that support simulation. This originates from 
+dfb_Sys_01. 
+ 
+Figure 4-7: System Bits – Simulation Disabled on Active Plant 
+ 
+ 
+Figure 4-8: Example of Simulation forced Off on Active Plant 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 74 of 86 
+ 
+Page 74 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.1.6.2 Function Block Interface 
+The Derived Function blocks for TPL provide an interface that allows them to be configured, 
+monitored and controlled from the SCADA system (Continuous and/or sequential control). 
+The following interfaces are provided: 
+• Basic Configuration 
+• Continuous Control 
+• Sequential Control 
+• States and Monitoring 
+Basic Configuration 
+DFB input pins are usually connected to static data and recognized in engineering time (for 
+example, input channel range or limit switch enabling on an on-off device.) These are 
+deemed fixed/hardcoded settings. 
+Continuous Control 
+DFB input and output pins: 
+• Allows receiving commands from other blocks or SCADA 
+• Provide block status to other blocks to enable functions, detect events (example: 
+High-level), interlocking, configure limits and parameters etc. 
+Sequential Control 
+SC public and structured variables publishes the block status and allows its control from the 
+control sequences. 
+States and Monitoring (DDT) 
+Depending on their types, the blocks feature up to 2 input/output pins that need to be 
+connected to variables used to pass data to other blocks. In addition, these variables allow 
+the commands and parameters received from the SCADA to be managed. 
+ TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 75 of 86 
+ 
+Page 75 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-9: Modularity of DFBs 
+4.1.7 Derived Data Types 
+A Derived Data Type is a set/structure of elements, typically standard data types such as 
+REAL, INT, BOOL etc, that are constructed by a user in a logical structure. This is used to 
+group data relating to (e.g. a Valve or DOL Motor Block). 
+Aside from just logical grouping of information pertaining to Control Modules, DDTs are used 
+to pass data between blocks.  
+Below is an example of a DDT comprising multiple different primary data types: 
+ 
+Figure 4-10: Example of DDT Structure 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 76 of 86 
+ 
+Page 76 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+4.1.8 Libraries 
+4.1.8.1 Unity Pro Function Block Libraries 
+The table below details all libraries and common functions that will be used in the PCS 
+Upgrade Project. By default, all of these libraries are installed with Unity Pro. The library 
+serves as a logical grouping of related functions.  
+ 
+Library Function Description 
+Base Library     
+  ABS Absolute 
+  ADD Mathematical Addition 
+  AND Boolean AND function 
+  AVE Mathematical Average operation 
+  BIT_TO_WORD Convert 16 Boolean values to Word (Word Packing) 
+  BYTE_AS_WORD Type conversion - Lower and Upper byte to word 
+conversion 
+  CTD Down Counter 
+  CTU Up Counter 
+  DINT_TO_INT Type conversion – Double (32Bit) Integer to 
+Single(16Bit) Integer 
+  DINT_TO_REAL Type conversion – Double (32Bit) Integer to Floating 
+Point IEEE 754 Standard 
+  DIV Mathematical Division operation 
+  EQ Comparison - Equal 
+  EXTRACT Function that copies a source table to a destination 
+table 
+  F_TRIG Boolean Edge detection on the Falling Edge 
+  GE Comparison - Greater Than or Equal 
+  GT Comparison - Greater Than 
+  INT_TO_DINT Type conversion - Single(16Bit) Integer to Double (32 
+Bit) Integer 
+  INT_TO_REAL Type conversion - Single(16Bit) Integer to Floating 
+Point IEEE 754 Standard 
+  LE Comparison - Less Than or Equal 
+  LIMIT Function to pass a value through provided it is within 
+a Lower and Upper boundary(Limit) 
+  LT Comparison - Less Than 
+  MAX Function returns the largest value (of a group of 
+inputs) to the output 
+  MOVE Function assigns the input value to the output 
+  MUL Mathematical Multiplication operation TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 77 of 86 
+ 
+Page 77 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+  NE Comparison - Not Equal 
+  OR Boolean OR function 
+  PID Function carries out PID type regulation on an integer 
+type 
+  R_TRIG Boolean Edge detection on the Rising Edge 
+  REAL_TO_DINT Type conversion - Floating Point IEEE 754 to 
+Double(32Bit) Integer 
+  REAL_TO_INT Type conversion - Floating Point IEEE 754 to 
+Single(16Bit) Integer 
+  RS Reset/Set latch with Reset Dominant 
+  SEL Function used for Binary Selection between two 
+values 
+  SUB Mathematical Subtraction operation 
+  TOF Off delay timer 
+  TON On delay timer 
+  TP Function used to generate a pulse with a given 
+duration 
+  WORD_TO_BIT Convert Word to 16 Boolean values (Bit Stripping) 
+      
+Communication 
+Library 
+    
+  ADDM Function converts a string to an address that other 
+function blocks can use to read/write data 
+  READ_VAR Function used to read Modbus registers from a 
+source defined by ADDM block 
+  Write_VAR Function used to write Modbus registers to a 
+destination defined by ADDM block 
+      
+Cont_Ctl Library     
+  HYST Function to apply a Hysteresis 
+  LAG_FILTER This function represents a delay element of 1st order 
+  RAMP Function applies a constant change from an initial 
+value to a target value 
+  SCALING Function used to change the value range of numerical 
+variables 
+ 
+Table 4-11: PCS Upgrade Project Used Libraries 
+4.1.8.2 Derived Libraries 
+Derived libraries are a collection of specific functions(DFBs) that are created for the project. 
+These libraries are fully open for monitoring and modification. Care should be exercised when 
+making any modification to derived libraries as the implication of a change to a library will 
+extend to all used instances of that library. For this reason, it is advisable to keep them in a TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 78 of 86 
+ 
+Page 78 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+locked format with READ-ONLY attributes. The password should be kept by Senior MC&I 
+Personnel. 
+Further details of Derived Libraries are described in the PCS Control Module Specification 
+Document. 
+PSX GPL(General Purpose Library) for Unity Pro 
+The GLP Library for Unity Pro software provides function blocks (EFBs and DFBs) that are 
+pre-configured and tested by Schneider Electric. These blocks are designed for automating a 
+large variety of processes. 
+Tabulated below are possible function to be used on the PCS Upgrade Project. The following 
+functionality has been tested by Schneider Electric and could reduce the development time in 
+providing for these specific functions. 
+ 
+Family Function Description 
+Signal Processing     
+  AISignalCond1 Analogue input signal conditioning 
+  AISignalCond1 Analogue output signal conditioning 
+  CounterSignalCondUInt Counter Signal conditioning 
+  DISignalCond1 Digital input signal conditioning 
+  DOSIGNALCOND Digital output signal conditioning 
+  ACALC Analogue calculations (ROC) 
+  AALARM Analogue limit levels 
+  AINPUT1 Configurable-range analogue inputs 
+  TOTAL Totalizer 
+      
+On/Off device 
+control     
+  DEVCTL On-off device control 
+  DEVMNT On-off device maintenance 
+Process Control ARAMP Ramp functionality 
+  PIDCTL PID controller 
+      
+Sequential control SEQCTL1 Advanced sequential control 
+  SEQPARxx Sequential parameter management 
+      
+Auxiliary functions ASELECT Analogue signal selector 
+  CONDSUM Summary of conditions 
+  CONDSUM1 Interlock condition summary 
+Table 4-12: GPL – Functions to be used TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 79 of 86 
+ 
+Page 79 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.1.8.3 Management of Libraries 
+During the development phase, a User project will be created for the development and 
+management of the specific Library of DFBs. This will be a common and multi-owner project 
+within EOH. At any given time, a single block will have only one owner who will be 
+responsible for creating/modifying/updating and documenting those blocks.  
+All of the blocks created during the development and testing phase will reside in this project. 
+A family of library blocks will then be created for import into the Site instances of Unity Pro.  
+4.1.9 Security 
+Unity Pro security is set up on the PC on which Unity is installed and not the project. A log file 
+can be used to keep a chronological record of the various operations carried out by users 
+with access to the software. 
+Super user (Supervisor) 
+The super user is the only person with rights to manage access security for the software. The 
+super user defines the list including the names of users who can access the software and 
+their access rights. 
+During installation of Unity Pro, only the super user can access the security configuration 
+without any limitation of rights (without a password). NOTE: The user name reserved for the 
+super use is Supervisor 
+The super user has the following rights: 
+• Create or modify the user list 
+• Create or modify user profiles 
+• Disable one or more users 
+• Modify the rules for software access security 
+• Modify his/her password 
+• Reset user passwords 
+ 
+ 
+Users 
+Software users are defined in the list of users by the super user, if Unity Pro Access Security 
+is active. If tour name is in the user list, you can access a software instance by entering your 
+name (exactly as it appears on the list) and your password. 
+A user has the following rights: 
+• Access the rights defined by his/her user profile in read mode 
+• Modify his/her password 
+User Profile TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 80 of 86 
+ 
+Page 80 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+The profile for a user comprises all of his/her access rights. It is defined by a name (2 to 16 
+characters), an optional comment (maximum of 256 characters) and a list of access rights. 
+Unity Pro provides 5 preconfigured user profiles that cannot be modified. To complete this 
+list, the super user can create all the personalised profiles that he/she requires. 
+ 
+Profile Description 
+ReadOnly 
+The user can only access the project in read 
+mode, except for the PLC address, which can be 
+modified. He/she can also copy or download 
+the project. 
+Operate 
+The user has the same rights as with a 
+ReadOnly profile, with the added possibility of 
+modifying execution parameters (constants, 
+initial values, task cycle times, etc.) 
+Adjust 
+The user has the same rights as with an 
+Operate profile, with the added possibility of 
+uploading a project (transfer to the PLC) and 
+modifying the PLC operating mode (Run, Stop, 
+…) 
+Debug 
+The user has the same rights as with and Adjust 
+profile with the added possibility of using the 
+debugging tools. 
+Program 
+The user has the same rights as with a Debug 
+profile, with the added possibility of modifying 
+the program. 
+Disabled User cannot access the project. 
+Table 4-13: User Rights 
+  TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 81 of 86 
+ 
+Page 81 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.2 Unity Simulator 
+Unity Pro has a built in PLC Simulator which simulates (emulates) the logic execution 
+behaviour of a PLC. This allows the ability to connect, download and run user applications in 
+the same runtime/animated environment as when connected to a real PLC. Saved State RAM 
+(which contain setpoint, logic states etc) can be also be transferred to and from the simulator 
+as with a real PLC 
+The primary purpose of the simulator is to debug Unity applications, however due to the 
+nature and requirement of the HMI Trainer, the PLC Simulator will be a convenient self-
+contained solution.  
+ 
+Figure 4-14: Unity Pro Simulator 
+ 
+Note: The simulator does not provide simulation for any PLC initiated explicit communication 
+to external slave devices. The simulator is unable to connect to IO (local or remote). No inter-
+PLC communication is possible with the simulator. The Simulator however is able to serve 
+SCADA client requests, therefore is able to perform full SCADA interactions. 
+4.2.1 Software Testing 
+The Unity Simulator will be used by the Development Software Engineers for general 
+software testing during development. Once the given piece of software is complete, it will 
+then be thoroughly tested by another Software Engineer on a real PLC as per pre-defined and 
+approved test procedures. Control modules and DFB functions are easily simulated using 
+animation tables to ‘force’ inputs and setpoints from the Unity Pro environment. 
+For larger, full scale simulation testing, visual testing interfaces (Analogue/parameter 
+setpoints, digital writes etc) will be built in OASyS DNA HMI . This toolkit has the ability to 
+connect to the PLC via Modbus TCP will be used to provide a graphic interface for testing and 
+supervision purposes. 
+4.3 Unity Loader 
+Unity Loader is a utility software to exchange data with Unity Modicon PLCs. This software 
+does not require a licence and can be used with all Unity enabled PLCs. Unity Loader offers 
+the following features: 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 82 of 86 
+ 
+Page 82 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+• Firmware download to CPUs. 
+• Firmware download to X80 modules that embed a firmware (Ethernet, analogue 
+HART, motion). 
+• Download / upload of project information 
+o Program 
+o Variables 
+o User files on the memory card (if installed) 
+4.4 Version Control 
+The following sections list the tools available for version control. The application version and 
+library version number will be transferred to the SCADA system and displayed on the 
+diagnostics page. Refer to the Software Configuration Management Plan for project specific 
+version control. 
+4.4.1 Application Version 
+The standard version control provided by Unity Pro is utilised in tracking application versions. 
+Unity Pro structures application version as: Major.Minor.Build. A time stamp is also provided 
+of the last Build.  
+ 
+ 
+Figure 4-15: Application Version 
+The application version information along with other information is available in user code 
+which will be passed to the SCADA system. 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 83 of 86 
+ 
+Page 83 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-16: Application Version for SCADA display 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 84 of 86 
+ 
+Page 84 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+Application versions prompted when a Download or Upload is commanded. 
+ 
+Figure 4-17: Version Compare 
+4.4.2 Library Version 
+The Standard library version provided by Unity Pro is aligned with Version of Software being 
+used. Unity Version 13 and as such, Libset V13.0 is used on the Crude PCS Upgrade Project. 
+These versions and control of these versions are done by Schneider Electric.  
+At an application level, it is possible to remain on a given library set. Therefore it is possible 
+to upgrade a version of Unity Pro, and keep the previous version of Library. 
+ 
+Figure 4-18: Library Version 
+  
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 85 of 86 
+ 
+Page 85 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+4.4.3 Standard Block Versions 
+Below is an example of a EFB out of the library: Libset V12.0 
+ 
+Figure 4-19: Standard Block Version 
+ 
+4.4.4 Derived Function Block Version 
+DBFs, being user created, are managed by the development team of EOH and Maintained by 
+the TPL team. The first section of code within all DFBs is a ST section called Revision. The 
+TPL library version number will be incremented on any change to DFBs within that library. 
+The revision control of therefore documented locally within the block. 
+ 
+Figure 4-20: DFB Version 
+ 
+TRANSNET PIPELINES  
+ 
+Document Name Document Number Revision Number Page 
+PLC Functional Design Specification PRJ: E354086-00000-271-078-0003 
+TPL:  
+02 
+ 
+Page 86 of 86 
+ 
+Page 86 of 86 Originator: EOH/AVEVA Original date: 12-07-2018 
+Copyright © Transnet Pipelines. All rights reserved, including rights to amendments. 
+ 
+Figure 4-21: DFB Version management 
+ 
+4.4.5 Unity Dif Software Tool 
+Unity Dif is a comparison software the compares the Unity Pro project files and displays the 
+differences graphically with a similar look and feed of Unity Pro. This enables the user to 
+understand the project differences easily. The result of the comparison is displayed in the 
+Unity Dif main window, which can be printed/saved as *.pdf or *.txt format. 
+The software provides differences of the following sections after comparison: 
+• PLC configuration (Hardware and network) 
+• Derived Data Types 
+• Derived FB Types 
+• Variables and FB Instance 
+• Motion 
+• Communication 
+• Programs 
+• Animation Tables 
+• Operator Screens 
+• DTM Catalogue 
+• Project Settings 
+ 
+The use of Unity DIF adds value from a maintenance perspective, providing TPL personnel to 
+analyse if/and what changes have been made to specific site applications. 
+ 
+ 

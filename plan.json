@@ -1,0 +1,572 @@
+{
+  "modules": [
+    {
+      "name": "OB100",
+      "relpath": "OB/OB100.scl",
+      "language": "SCL",
+      "type": "OB",
+      "summary": "Cold-start initialization: configures instance DB defaults, clears non-latched diagnostics where permitted, initializes mode manager and alarm manager, and enforces ESTOP safe state at power-up.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": [
+          "DB_ModeMgr",
+          "DB_AlarmMgr",
+          "DB_Diag",
+          "DB_Comms",
+          "DB_PalletizerHS",
+          "DB_MergeDivert",
+          "DB_Conveyor1"
+        ]
+      },
+      "dependencies": [
+        "FB_ModeMgr",
+        "FB_AlarmMgr",
+        "FB_Diag",
+        "FB_Comms"
+      ],
+      "purpose": "Set deterministic safe defaults at cold start, instantiate/initialize singleton FB instance DBs and latch critical alarms if ESTOP asserted. Ensures system starts in a safe, known mode."
+    },
+    {
+      "name": "OB1",
+      "relpath": "OB/OB1.scl",
+      "language": "SCL",
+      "type": "OB",
+      "summary": "Main cyclic (MAST) task: executes mode manager, scans conveyors, merge/divert, palletizer handshake state machine, alarm processing, diagnostics and communication updates each cycle.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": [
+          "DB_ModeMgr",
+          "DB_AlarmMgr",
+          "DB_Diag",
+          "DB_Comms",
+          "DB_MergeDivert",
+          "DB_PalletizerHS",
+          "DB_Conveyor1"
+        ]
+      },
+      "dependencies": [
+        "FB_ModeMgr",
+        "FB_Conveyor",
+        "FB_MergeDivert",
+        "FB_PalletizerHS",
+        "FB_AlarmMgr",
+        "FB_Diag",
+        "FB_Comms"
+      ],
+      "purpose": "Cyclic execution of application function blocks and periodic exchanges (heartbeats, mode evaluation, alarm scanning, SCADA mapping) within the defined MAST cycle."
+    },
+    {
+      "name": "FB_ModeMgr",
+      "relpath": "FB/FB_ModeMgr.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Central mode manager implementing RUN/STOP/HALT/WAIT/SIMULATION/MAINTENANCE semantics, permissive evaluation, HSBY switchover triggers and ESTOP enforced safety transitions.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "HSBY_link_healthy",
+            "type": "BOOL",
+            "comment": "Derived permissive input: true when HSBY heartbeat/link healthy"
+          },
+          {
+            "name": "Time_synchronization_ok",
+            "type": "BOOL",
+            "comment": "Permissive: domain controller reachable and time within drift limits"
+          },
+          {
+            "name": "Operator_CMD",
+            "type": "STRING",
+            "comment": "Operator-issued mode command: 'CMD_RUN','CMD_STOP','CMD_MAINT','CMD_SIM','CMD_RESET'"
+          },
+          {
+            "name": "DDDT_CMD_STOP",
+            "type": "BOOL",
+            "comment": "Distributed command stop (DDDT) input"
+          },
+          {
+            "name": "ESTOP_asserted",
+            "type": "BOOL",
+            "comment": "Hard ESTOP input that must force safe state"
+          },
+          {
+            "name": "HSBY_CMD_SWAP",
+            "type": "BOOL",
+            "comment": "HSBY user-code swap command"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CurrentMode",
+            "type": "UDT_State",
+            "comment": "Published current mode & meta-state to other blocks and SCADA"
+          },
+          {
+            "name": "ModePermissivesBitmap",
+            "type": "UINT32",
+            "comment": "Bitmask of permissives evaluated for the active mode"
+          },
+          {
+            "name": "RequestModeChange",
+            "type": "STRING",
+            "comment": "Requested mode transition suggestion for logging/audit"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_ModeMgr",
+          "DB_AlarmMgr",
+          "DB_Diag"
+        ]
+      },
+      "dependencies": [
+        "UDT_State",
+        "FB_AlarmMgr",
+        "FB_Diag"
+      ],
+      "purpose": "Authoritative control of system mode, permissive evaluation, HSBY switchover initiation and enforcement of ESTOP safing across function blocks."
+    },
+    {
+      "name": "FB_Conveyor",
+      "relpath": "FB/FB_Conveyor.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Conveyor object implementing start/stop, accumulation support, jam detection with hysteresis and confirmation delay, debouncing, occupant counter and safety interlocks. Designed for multiple instances (DB_Conveyor1..N).",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "Cmd_Start",
+            "type": "BOOL",
+            "comment": "Request to start conveyor (from mode manager or operator)"
+          },
+          {
+            "name": "Cmd_Stop",
+            "type": "BOOL",
+            "comment": "Request to stop conveyor"
+          },
+          {
+            "name": "Sensor_Primary",
+            "type": "BOOL",
+            "comment": "Primary occupancy/proximity sensor (24V DI)"
+          },
+          {
+            "name": "Sensor_Secondary",
+            "type": "BOOL",
+            "comment": "Secondary sensor for two-sensor jam detection or confirmation"
+          },
+          {
+            "name": "Encoder_Count",
+            "type": "DINT",
+            "comment": "Pulse/encoder counter input for position/flow"
+          },
+          {
+            "name": "Reset_Jam",
+            "type": "BOOL",
+            "comment": "Operator reset to clear jam (requires alarm ack and permissives)"
+          },
+          {
+            "name": "Sim_Enable",
+            "type": "BOOL",
+            "comment": "Simulation enable input to isolate physical outputs"
+          },
+          {
+            "name": "ESTOP_asserted",
+            "type": "BOOL",
+            "comment": "ESTOP input forces safe outputs"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Drive_Enable",
+            "type": "BOOL",
+            "comment": "Command to drive contactor or motor starter (subject to safety hold/trip)"
+          },
+          {
+            "name": "Jam_Detected",
+            "type": "BOOL",
+            "comment": "Latched jam detection flag (requires manual ack by default)"
+          },
+          {
+            "name": "Occupant_Count",
+            "type": "DINT",
+            "comment": "Count of items present for accumulation logic"
+          },
+          {
+            "name": "Fault",
+            "type": "BOOL",
+            "comment": "General fault output for higher-level alarm manager"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_Conveyor1",
+          "pattern: DB_Conveyor{n} (one instance DB per conveyor)"
+        ]
+      },
+      "dependencies": [
+        "UDT_Device",
+        "UDT_State",
+        "FB_AlarmMgr",
+        "FB_Diag"
+      ],
+      "purpose": "Instance-based conveyor controller implementing conservative jam detection, debouncing, anti-jam behavior and safe hold on ESTOP; supports multiple instance DBs (DB_Conveyor1..N)."
+    },
+    {
+      "name": "FB_MergeDivert",
+      "relpath": "FB/FB_MergeDivert.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Merge/divert routing block: validates barcode schema, consults routing table, issues divert/hold commands and raises 'routing_missing' fallback alarm when no route available.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "Barcode",
+            "type": "STRING",
+            "comment": "Raw barcode string to parse (supports GS1-128 or custom 24-char schema)"
+          },
+          {
+            "name": "RoutingTableValid",
+            "type": "BOOL",
+            "comment": "Indicates the routing table is loaded and usable"
+          },
+          {
+            "name": "OperatorManualRoute",
+            "type": "STRING",
+            "comment": "Operator selected manual route override"
+          },
+          {
+            "name": "Reset",
+            "type": "BOOL",
+            "comment": "Reset fallback/latched routing_missing alarm"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RouteCmd",
+            "type": "STRING",
+            "comment": "Resolved route identifier to be consumed by downstream actuators or PLC function blocks"
+          },
+          {
+            "name": "HoldCmd",
+            "type": "BOOL",
+            "comment": "Command to hold product in safe position when routing not available"
+          },
+          {
+            "name": "Alarm_RoutingMissing",
+            "type": "BOOL",
+            "comment": "Routed alarm flag for ALARM manager"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_MergeDivert"
+        ]
+      },
+      "dependencies": [
+        "FB_AlarmMgr",
+        "FB_Diag",
+        "UDT_Device"
+      ],
+      "purpose": "Resolve routing decisions by barcode or table, implement conservative fallback to manual hold and notify alarm manager/SCADA when routing is missing."
+    },
+    {
+      "name": "FB_PalletizerHS",
+      "relpath": "FB/FB_PalletizerHS.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "High-speed palletizer handshake state machine implementing IDLE->REQUEST->ACKNOWLEDGE->PREPARE_TRANSFER->TRANSFER->COMPLETE plus watchdogs, retries and fault handling.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "Start_Request",
+            "type": "BOOL",
+            "comment": "External request to initiate palletize transfer (SCADA/upstream PLC)"
+          },
+          {
+            "name": "Palletizer_Ready",
+            "type": "BOOL",
+            "comment": "Palletizer readiness/ack signal"
+          },
+          {
+            "name": "Interlocks_OK",
+            "type": "BOOL",
+            "comment": "Aggregated interlocks (doors closed, no jam, weight OK)"
+          },
+          {
+            "name": "ESTOP_asserted",
+            "type": "BOOL",
+            "comment": "ESTOP forces immediate FAULT/abort"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "HS_State",
+            "type": "UDT_State",
+            "comment": "Current handshake state for SCADA and diagnostics"
+          },
+          {
+            "name": "Transfer_StartCmd",
+            "type": "BOOL",
+            "comment": "Command issued to start transfer sequence"
+          },
+          {
+            "name": "Handshake_Fault",
+            "type": "BOOL",
+            "comment": "Latched fault flag requiring manual reset"
+          },
+          {
+            "name": "Retry_Count",
+            "type": "UINT",
+            "comment": "Current handshake retry attempts"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_PalletizerHS"
+        ]
+      },
+      "dependencies": [
+        "UDT_State",
+        "FB_AlarmMgr",
+        "FB_Diag"
+      ],
+      "purpose": "Manage palletizer handshake with configured watchdogs, retries and strict safety exits; latched faults require manual recovery per contract."
+    },
+    {
+      "name": "FB_AlarmMgr",
+      "relpath": "FB/FB_AlarmMgr.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Central alarm manager handling alarm definitions, latching, acknowledgement, first-out selection, prioritisation and event logging for SCADA exposure.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "AlarmInputs",
+            "type": "ARRAY[1..256] OF UDT_Alarm",
+            "comment": "Array of candidate alarms fields supplied by callers (ID, severity, condition)"
+          },
+          {
+            "name": "AckCommand",
+            "type": "STRING",
+            "comment": "SCADA/operator acknowledgement command: 'ACK:<AlarmID>'"
+          },
+          {
+            "name": "ClearCommand",
+            "type": "STRING",
+            "comment": "SCADA/operator clear command: 'CLR:<AlarmID>'"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "ActiveAlarms",
+            "type": "ARRAY[1..256] OF UDT_Alarm",
+            "comment": "Current active alarm list published to SCADA"
+          },
+          {
+            "name": "FirstOutAlarm",
+            "type": "UDT_Alarm",
+            "comment": "Calculated first-out alarm per priority/latch rules"
+          },
+          {
+            "name": "EventLogOut",
+            "type": "ARRAY[1..1000] OF EventLogEntry",
+            "comment": "Circular event log buffer for recent events (timestamped)"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_AlarmMgr"
+        ]
+      },
+      "dependencies": [
+        "UDT_Alarm",
+        "FB_Diag",
+        "FB_Comms"
+      ],
+      "purpose": "Provide deterministic alarm lifecycle management (latch, ack, first-out) and persist recent timestamped events for SCADA and diagnostics."
+    },
+    {
+      "name": "FB_Diag",
+      "relpath": "FB/FB_Diag.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Diagnostics and heartbeat manager: monitors CPU heartbeat, HSBY heartbeats, IO module status words, time sync, produces diagnostic tags and populates event log entries for alarms and switchover events.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "CPU_Heartbeat_ts",
+            "type": "UINT64",
+            "comment": "Timestamp (UTC ms) of last CPU heartbeat update"
+          },
+          {
+            "name": "HSBY_HB_ts",
+            "type": "UINT64",
+            "comment": "HSBY heartbeat last received timestamp"
+          },
+          {
+            "name": "ModuleStatusWords",
+            "type": "ARRAY[1..64] OF RIO_Module_Status",
+            "comment": "Packed module diagnostic words from remote racks"
+          },
+          {
+            "name": "TimeSync_OK",
+            "type": "BOOL",
+            "comment": "Time synchronization healthy flag"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DiagnosticsTags",
+            "type": "STRUCT",
+            "comment": "Composite diagnostic outputs (CPU status, HSBY status, RIO summary) mapped to SCADA"
+          },
+          {
+            "name": "RaiseAlarm",
+            "type": "UDT_Alarm",
+            "comment": "Single alarm structure output to be consumed by FB_AlarmMgr when diagnosic thresholds breached"
+          },
+          {
+            "name": "EventLogAppend",
+            "type": "EventLogEntry",
+            "comment": "Event entry to append to alarm/event log"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_Diag"
+        ]
+      },
+      "dependencies": [
+        "UDT_Device",
+        "UDT_Alarm",
+        "FB_AlarmMgr",
+        "FB_Comms"
+      ],
+      "purpose": "Continuously evaluate system health (heartbeats, IO modules, time sync), generate diagnostics tags for SCADA and raise appropriate alarms/events when thresholds are violated."
+    },
+    {
+      "name": "FB_Comms",
+      "relpath": "FB/FB_Comms.scl",
+      "language": "SCL",
+      "type": "FB",
+      "summary": "Communications mapping: provides Modbus TCP/serial mapping of DDTs, enforces poll/request limits, prepares SCADA tag payloads and provides time-sync interface for other FBs.",
+      "public_interfaces": {
+        "inputs": [
+          {
+            "name": "Modbus_RequestQueue",
+            "type": "ARRAY[1..32] OF STRING",
+            "comment": "Incoming Modbus request descriptors from BMENOC or Modbus gateways"
+          },
+          {
+            "name": "TimeSync_Request",
+            "type": "BOOL",
+            "comment": "Request to update PLC time from domain controller"
+          },
+          {
+            "name": "SCADA_WriteCommands",
+            "type": "ARRAY[1..32] OF STRING",
+            "comment": "SCADA write requests to mapped DDTs"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Modbus_Register_Map",
+            "type": "CommAddressDDT",
+            "comment": "Public mapping of DDT-to-Modbus addressing for gateway configuration"
+          },
+          {
+            "name": "SCADA_Tag_Payload",
+            "type": "STRUCT",
+            "comment": "Packed SCADA tag payload ready for Modbus or OPC UA exposure"
+          },
+          {
+            "name": "Comms_Diagnostics",
+            "type": "STRUCT",
+            "comment": "Network and module comms health for diagnostics block"
+          }
+        ],
+        "inouts": [],
+        "db_refs": [
+          "DB_Comms"
+        ]
+      },
+      "dependencies": [
+        "FB_Diag",
+        "UDT_Device"
+      ],
+      "purpose": "Map internal DDT/UDT structures to Modbus/SCADA registers, manage request concurrency limits and report communication diagnostics to diagnostics and alarm manager modules."
+    },
+    {
+      "name": "UDT_Device",
+      "relpath": "UDT/UDT_Device.scl",
+      "language": "SCL",
+      "type": "UDT",
+      "summary": "Generic device control UDT used by FBs to represent actuators and simple devices (valves, motors, conveyors). Includes command mode, command bits, feedback, fault and maintenance flags.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": []
+      },
+      "dependencies": [],
+      "purpose": "Standardized device control structure exposed to SCADA and used as the single source-of-truth for device command and status fields across FBs."
+    },
+    {
+      "name": "UDT_Alarm",
+      "relpath": "UDT/UDT_Alarm.scl",
+      "language": "SCL",
+      "type": "UDT",
+      "summary": "Standard alarm DDT used for alarm manager and SCADA: contains alarm ID, severity, timestamp, latched/ack flags and operator metadata.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": []
+      },
+      "dependencies": [],
+      "purpose": "Uniform alarm representation for consistent latching, acknowledgement, ordering (first-out) and event logging."
+    },
+    {
+      "name": "UDT_State",
+      "relpath": "UDT/UDT_State.scl",
+      "language": "SCL",
+      "type": "UDT",
+      "summary": "State and mode UDT representing current mode, substates, permissive bitmask and timestamps for mode transitions and HSBY exchange.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": []
+      },
+      "dependencies": [],
+      "purpose": "Provide a standardized state payload for mode manager, handshake blocks and SCADA exposure to avoid duplication of mode/state fields."
+    },
+    {
+      "name": "docs/Scada_Tag_Map.md",
+      "relpath": "docs/Scada_Tag_Map.md",
+      "language": "Markdown",
+      "type": "FC",
+      "summary": "Generated SCADA Tag Map: human-readable mapping from internal DDTs/UDTs and FB DBs to SCADA tag names and Modbus register assignments. Includes heartbeat, alarm, diagnostic and device tag lists.",
+      "public_interfaces": {
+        "inputs": [],
+        "outputs": [],
+        "inouts": [],
+        "db_refs": [
+          "DB_Comms",
+          "DB_Diag",
+          "DB_AlarmMgr",
+          "DB_ModeMgr"
+        ]
+      },
+      "dependencies": [
+        "FB_Comms",
+        "FB_Diag",
+        "FB_AlarmMgr"
+      ],
+      "purpose": "Reference document auto-generated from project DDTs and FB DBs for SCADA integration teams; lists tag names, data types, Modbus register mappings and recommended polling intervals."
+    }
+  ]
+}

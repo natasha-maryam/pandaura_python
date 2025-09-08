@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket PDF Upload</title>
+</head>
+<body>
+    <h1>WebSocket PDF and Text Input</h1>
+    <div>
+        <label>Session ID: <input type="text" id="sessionId" value="test_user_123"></label>
+    </div>
+    <div>
+        <label>Text Message: <input type="text" id="message" placeholder="e.g., my name is John"></label>
+        <button onclick="sendText()">Send Text</button>
+    </div>
+    <div>
+        <label>PDF Prompt: <input type="text" id="pdfPrompt" placeholder="e.g., Summarize this document"></label>
+        <label>PDF File: <input type="file" id="pdfFile" accept=".pdf"></label>
+        <button onclick="sendPdf()">Send PDF</button>
+    </div>
+    <div>
+        <h3>Responses</h3>
+        <pre id="responses"></pre>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:8000/ws/chat");
+        const responsesDiv = document.getElementById("responses");
+
+        ws.onopen = () => {
+            console.log("WebSocket connected");
+            responsesDiv.textContent += "Connected to WebSocket\n";
+        };
+
+        ws.onmessage = (event) => {
+            const response = JSON.parse(event.data);
+            responsesDiv.textContent += JSON.stringify(response, null, 2) + "\n\n";
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            responsesDiv.textContent += "Error: " + error.message + "\n";
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket closed");
+            responsesDiv.textContent += "WebSocket disconnected\n";
+        };
+
+        function sendText() {
+            const sessionId = document.getElementById("sessionId").value;
+            const message = document.getElementById("message").value;
+            if (message) {
+                const payload = {
+                    session_id: sessionId,
+                    message: message
+                };
+                ws.send(JSON.stringify(payload));
+                responsesDiv.textContent += "Sent: " + JSON.stringify(payload, null, 2) + "\n";
+            } else {
+                alert("Please enter a message");
+            }
+        }
+
+        function sendPdf() {
+            const sessionId = document.getElementById("sessionId").value;
+            const prompt = document.getElementById("pdfPrompt").value;
+            const fileInput = document.getElementById("pdfFile");
+            if (!prompt || !fileInput.files[0]) {
+                alert("Please provide a prompt and select a PDF file");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64Data = reader.result.split(",")[1]; // Remove data:application/pdf;base64,
+                const payload = {
+                    session_id: sessionId,
+                    message: "process pdf",
+                    prompt: prompt,
+                    pdf_data: base64Data,
+                    pdf_name: file.name
+                };
+                ws.send(JSON.stringify(payload));
+                responsesDiv.textContent += "Sent: " + JSON.stringify(payload, null, 2) + "\n";
+            };
+            reader.onerror = () => {
+                alert("Error reading PDF file");
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

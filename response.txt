@@ -1,0 +1,1267 @@
+{
+  "modes": {
+    "list": [
+      {
+        "name": "PRIMARY_RUN",
+        "description": "CPU designated Primary executing application and servicing Remote IO.",
+        "permissives": [
+          "CPU_HEALTH == OK",
+          "HSBY_LINK == UP",
+          "RIO_OWNER_CONNECTIONS >= 1",
+          "MAINT_LOCK == FALSE",
+          "ESTOP == FALSE"
+        ],
+        "entry_actions": [
+          "announce_role_to_scada('PRIMARY')",
+          "enable_io_scanner()",
+          "start_tasks(MAST, FAST)"
+        ],
+        "exit_actions": [
+          "stop_tasks_as_required",
+          "flush_outputs_to_safe_state_if_required"
+        ],
+        "estop_behavior": "On ESTOP assert, immediately set outputs to configured ESTOP_SAFE state (force outputs where ESTOP_SAFE configured), latch ESTOP alarm, inhibit further start commands until ESTOP cleared and acknowledged."
+      },
+      {
+        "name": "STANDBY_RUN",
+        "description": "CPU holding synchronized state, not executing primary program logic; ready to assume Primary.",
+        "permissives": [
+          "CPU_HEALTH == OK",
+          "HSBY_LINK == UP",
+          "REMOTE_STS_VALID == TRUE",
+          "ESTOP == FALSE"
+        ],
+        "entry_actions": [
+          "announce_role_to_scada('STANDBY')",
+          "keep_state_ram_synced",
+          "maintain_owner_connections_to_RIO"
+        ],
+        "exit_actions": [
+          "if becoming_primary => perform role_swap_procedure()"
+        ],
+        "estop_behavior": "Stop accepting commands from SCADA for control; report ESTOP status to SCADA and maintain remote outputs in HOLD state until new primary sets outputs."
+      },
+      {
+        "name": "WAIT",
+        "description": "Neither primary nor standby; entered when preconditions for HSBY not met (e.g., HSBY link down on standby).",
+        "permissives": [
+          "HSBY_LINK == UP",
+          "REMOTE_STS_VALID == TRUE"
+        ],
+        "entry_actions": [
+          "announce_role_to_scada('WAIT')",
+          "disable_io_scanner"
+        ],
+        "exit_actions": [
+          "synchronize_state_ram_from_primary()"
+        ],
+        "estop_behavior": "Report ESTOP if present. Outputs remain controlled by existing primary if present; if no primary, outputs moved to safe defaults per device configuration."
+      },
+      {
+        "name": "HALT",
+        "description": "Blocking condition or fatal error; CPU in HALT state.",
+        "permissives": [],
+        "entry_actions": [
+          "generate_critical_alarm('CPU_HALTED')",
+          "announce_role_to_scada('HALT')"
+        ],
+        "exit_actions": [
+          "requires_manual_reset_via_unity_or_physical"
+        ],
+        "estop_behavior": "If ESTOP asserted before HALT, ESTOP remains latched. All outputs should be in safe state; alarms latched and require manual reset."
+      },
+      {
+        "name": "MAINTENANCE",
+        "description": "Maintenance mode where parts of system may be put into simulation or forced states.",
+        "permissives": [
+          "MAINT_UNLOCK == TRUE",
+          "AUTH_MAINT_USER == TRUE"
+        ],
+        "entry_actions": [
+          "enable_simulation_controls",
+          "disable_automatic_sequences_as_configured"
+        ],
+        "exit_actions": [
+          "restore_simulation_bits_to_false",
+          "re-enable_auto_sequences"
+        ],
+        "estop_behavior": "ESTOP overrides Maintenance; transition to safe state and require ESTOP clear before resuming."
+      },
+      {
+        "name": "CONFIG",
+        "description": "Change of Configuration On The Fly (CCOTF) active; permitted modifications applied.",
+        "permissives": [
+          "OPERATOR_AUTH == TRUE",
+          "NO_ACTIVE_CHANGE_VIOLATIONS == TRUE"
+        ],
+        "entry_actions": [
+          "lock_operational_commands",
+          "apply_configuration_changes"
+        ],
+        "exit_actions": [
+          "verify_configuration_stability",
+          "resume_normal_operation"
+        ],
+        "estop_behavior": "If ESTOP asserted, abort CCOTF changes where safe, revert to last known stable configuration where defined, and enter safe state."
+      },
+      {
+        "name": "SIMULATION",
+        "description": "Site-level or block-level simulation enabled. Blocks with Sim_En pin true will use simulated inputs.",
+        "permissives": [
+          "sys.Simulation_Enabled == TRUE",
+          "MAINT_LOCK == TRUE"
+        ],
+        "entry_actions": [
+          "set_simulation_flags",
+          "publish_simulation_mode_to_SCADA"
+        ],
+        "exit_actions": [
+          "clear_simulation_flags",
+          "verify_real_io_consistency"
+        ],
+        "estop_behavior": "Simulation does not suppress ESTOP; ESTOP forces outputs to ESTOP_SAFE and simulation blocks must not drive outputs that conflict with ESTOP_SAFE definitions."
+      }
+    ],
+    "transitions": [
+      {
+        "from": "PRIMARY_RUN",
+        "to": "STANDBY_RUN",
+        "trigger": "CMD_SWAP or primary_failure_detected",
+        "conditions": [
+          "standby_cpu_ready == TRUE",
+          "hsby_link_up == TRUE"
+        ],
+        "max_time_ms": 100
+      },
+      {
+        "from": "STANDBY_RUN",
+        "to": "PRIMARY_RUN",
+        "trigger": "primary_failure_detected or CMD_SWAP",
+        "conditions": [
+          "standby_has_valid_state_ram == TRUE"
+        ],
+        "max_time_ms": 100
+      },
+      {
+        "from": "ANY",
+        "to": "HALT",
+        "trigger": "blocking_hardware_error_detected",
+        "conditions": [],
+        "max_time_ms": 15
+      },
+      {
+        "from": "ANY",
+        "to": "WAIT",
+        "trigger": "hsby_link_loss_on_standby_or_partial_loss",
+        "conditions": [],
+        "max_time_ms": 3000
+      },
+      {
+        "from": "ANY",
+        "to": "MAINTENANCE",
+        "trigger": "operator_command_maintenance_mode",
+        "conditions": [
+          "authorized_user"
+        ],
+        "max_time_ms": 5000
+      }
+    ],
+    "permissive_summary": {
+      "HSBY_link_required_for_standby_sync": true,
+      "Estop_overrides_all_modes": true,
+      "Manual_override_requires_authorization": true
+    }
+  },
+  "conveyors": {
+    "conveyors": [],
+    "counts": {
+      "total": 0,
+      "per_site_max_provisioned": 0
+    },
+    "requirements": {
+      "accumulation_detection": "If conveyors are present they must support stopped/accumulation detection via two independent sensors per accumulation zone (presence/pressure/encoder).",
+      "jam_detection": "Jam detection requires motion feedback (encoder or tach) plus contact/flow sensors; alarm on mismatch between motor run-command and no-motion for JAM_TIMEOUT configurable default 5s.",
+      "sensors": [
+        {
+          "type": "photoeye",
+          "redundancy": "single",
+          "poll_ms": 50
+        },
+        {
+          "type": "encoder",
+          "redundancy": "recommended",
+          "poll_ms": 5
+        }
+      ],
+      "timers": {
+        "jam_timeout_ms": 5000,
+        "accumulation_confirm_ms": 250,
+        "clearing_sequence_max_duration_ms": 60000
+      },
+      "clear_sequence": {
+        "description": "Automated clearing requires enable, operator permission, and detection of downstream space. Sequence: inhibit upstream feeders, ramp local motor to reverse or jog, monitor sensors, allow restart when clear.",
+        "interlocks": [
+          "FIREGAS_NOT_ACTIVE",
+          "MAINT_LOCK == FALSE",
+          "ESTOP == FALSE"
+        ]
+      },
+      "safety": "Conveyor outputs must be released to safe state within two FAST cycles on ESTOP and on detected motor overcurrent or encoder failure."
+    }
+  },
+  "merge_divert": {
+    "barcode_schema": {
+      "format": "GS1-128 or CODE128",
+      "fields": [
+        {
+          "name": "product_code",
+          "type": "string",
+          "length_max": 32
+        },
+        {
+          "name": "destination_id",
+          "type": "string",
+          "length_max": 16
+        },
+        {
+          "name": "batch_id",
+          "type": "string",
+          "length_max": 32
+        }
+      ],
+      "fallback_on_invalid_barcode": "route_to_default_hold_location"
+    },
+    "routing_table": [],
+    "fallback_paths": [
+      {
+        "name": "DEFAULT_HOLD",
+        "priority": 1,
+        "description": "Default hold chute/slot. Use when routing table has no match or barcode unreadable."
+      },
+      {
+        "name": "SAFE_DIVERT",
+        "priority": 2,
+        "description": "Divert to safe buffer; triggered if primary buffer full and downstream unavailable."
+      }
+    ],
+    "requirements": {
+      "latency_ms_max": 200,
+      "barcode_read_retries": 3,
+      "interlock_requirements": [
+        "merge_gate_position_confirmed",
+        "downstream_space_available",
+        "ESTOP == FALSE"
+      ],
+      "diagnostics": "Barcode reader health, read_rate, last_read_timestamp exposed to SCADA."
+    }
+  },
+  "palletizer_handshake": {
+    "states": [
+      "IDLE",
+      "REQUEST_PALLET",
+      "PALLET_READY",
+      "TRANSFER",
+      "ACK_TRANSFER",
+      "COMPLETE",
+      "FAULT"
+    ],
+    "transitions": [
+      {
+        "from": "IDLE",
+        "to": "REQUEST_PALLET",
+        "trigger": "packaging_sequence_ready",
+        "timeout_ms": 5000
+      },
+      {
+        "from": "REQUEST_PALLET",
+        "to": "PALLET_READY",
+        "trigger": "palletizer_ack",
+        "timeout_ms": 20000,
+        "retries": 2,
+        "on_timeout": "FAULT"
+      },
+      {
+        "from": "PALLET_READY",
+        "to": "TRANSFER",
+        "trigger": "transfer_start_confirmed",
+        "timeout_ms": 30000
+      },
+      {
+        "from": "TRANSFER",
+        "to": "ACK_TRANSFER",
+        "trigger": "palletizer_transfer_complete",
+        "timeout_ms": 60000,
+        "retries": 1,
+        "on_timeout": "FAULT"
+      },
+      {
+        "from": "ACK_TRANSFER",
+        "to": "COMPLETE",
+        "trigger": "ack_received_by_master",
+        "timeout_ms": 5000
+      },
+      {
+        "from": "ANY",
+        "to": "FAULT",
+        "trigger": "interlock_violation_or_estop",
+        "timeout_ms": 0
+      }
+    ],
+    "interlocks": [
+      "safety_light_curtain_ok",
+      "guard_doors_closed",
+      "robot_in_range == FALSE",
+      "ESTOP == FALSE"
+    ],
+    "watchdogs_and_retries": {
+      "handshake_watchdog_ms": 2000,
+      "max_retries": 3,
+      "retry_backoff_ms": 1000
+    },
+    "fault_exits": {
+      "on_fault": [
+        "set_local_outputs_to_safe",
+        "generate_alrm('PALLETIZER_HANDSHAKE_FAULT')",
+        "require_manual_reset_via_SCADA"
+      ]
+    },
+    "diagnostics": [
+      "last_handshake_timestamp",
+      "handshake_success_rate",
+      "current_state",
+      "last_error_code"
+    ]
+  },
+  "alarms": {
+    "list": [
+      {
+        "tag": "CPU_A_HSBY_LINK_DOWN",
+        "description": "Hot Standby link down on CPU A",
+        "class": "CRITICAL",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "automatic_on_recover",
+        "inhibitable": false,
+        "first_out_priority": 1,
+        "scada_tag": "cpu.a.hsby_link.status"
+      },
+      {
+        "tag": "CPU_B_HSBY_LINK_DOWN",
+        "description": "Hot Standby link down on CPU B",
+        "class": "CRITICAL",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "automatic_on_recover",
+        "inhibitable": false,
+        "first_out_priority": 1,
+        "scada_tag": "cpu.b.hsby_link.status"
+      },
+      {
+        "tag": "CPU_PRIMARY_HALTED",
+        "description": "Primary CPU halted (blocking condition)",
+        "class": "CRITICAL",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "manual_reset_after_fault_cleared",
+        "inhibitable": false,
+        "first_out_priority": 0,
+        "scada_tag": "cpu.primary.halt"
+      },
+      {
+        "tag": "BMENOC0321_FAILURE",
+        "description": "BMENOC0321 SCADA communication module fault or communication loss",
+        "class": "HIGH",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "automatic_on_recover_or_manual_on_fw_update",
+        "inhibitable": false,
+        "first_out_priority": 2,
+        "scada_tag": "module.bmenoc0321.status"
+      },
+      {
+        "tag": "RIO_DROP_FAULT",
+        "description": "Remote IO rack (drop) fault (loss of communication or module fault)",
+        "class": "HIGH",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "automatic_on_recover",
+        "inhibitable": false,
+        "first_out_priority": 3,
+        "scada_tag": "rio.{drop}.status"
+      },
+      {
+        "tag": "IO_MODULE_CHANNEL_FAULT",
+        "description": "Individual IO channel fault (module red LED, channel error)",
+        "class": "MEDIUM",
+        "latch": true,
+        "ack_required": false,
+        "reset_action": "automatic_on_channel_repair",
+        "inhibitable": true,
+        "first_out_priority": 10,
+        "scada_tag": "io.{module}.{channel}.fault"
+      },
+      {
+        "tag": "POWER_SUPPLY_FAULT",
+        "description": "Rack power supply fault or undervoltage",
+        "class": "HIGH",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "manual_reset_after_power_restore",
+        "inhibitable": false,
+        "first_out_priority": 2,
+        "scada_tag": "psu.{rack}.status"
+      },
+      {
+        "tag": "UPS_FAULT",
+        "description": "UPS indicates fault condition",
+        "class": "HIGH",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "manual",
+        "inhibitable": false,
+        "first_out_priority": 4,
+        "scada_tag": "ups.{id}.status"
+      },
+      {
+        "tag": "TIME_SYNC_LOST",
+        "description": "Time synchronization lost",
+        "class": "MEDIUM",
+        "latch": false,
+        "ack_required": false,
+        "reset_action": "automatic_on_sync_restore",
+        "inhibitable": true,
+        "first_out_priority": 20,
+        "scada_tag": "timesync.status"
+      },
+      {
+        "tag": "SIF_TRIP",
+        "description": "Safety Instrumented Function Trip",
+        "class": "CRITICAL",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "manual_reset_after_SIS_restore",
+        "inhibitable": false,
+        "first_out_priority": 0,
+        "scada_tag": "sif.trip"
+      },
+      {
+        "tag": "VSD_COMM_LOST",
+        "description": "Variable Speed Drive lost communications",
+        "class": "MEDIUM",
+        "latch": true,
+        "ack_required": false,
+        "reset_action": "automatic_on_comm_restore",
+        "inhibitable": true,
+        "first_out_priority": 15,
+        "scada_tag": "vsd.{id}.comm_status"
+      },
+      {
+        "tag": "FIREGAS_ALARM",
+        "description": "Fire and Gas system alarm (interface)",
+        "class": "CRITICAL",
+        "latch": true,
+        "ack_required": true,
+        "reset_action": "manual_reset_by_fire_system_protocol",
+        "inhibitable": false,
+        "first_out_priority": 0,
+        "scada_tag": "fgs.{station}.alarm"
+      }
+    ],
+    "rules": {
+      "first_out_selection": "critical alarms with lowest first_out_priority value are presented as first-out; multiple alarms with equal priority present in chronological order.",
+      "latch_policy": "Critical and High alarms latch until manual acknowledgment except where automatic recovery is safe and defined.",
+      "ack_reset_policy": "Acknowledgment required for critical/high alarms; reset only when condition cleared and, for critical, after manual operator verification.",
+      "inhibit_policy": "Operator-inhibit allowed only when authorized and recorded; inhibited alarms still logged as inhibited in history.",
+      "escalation": "If critical alarm not acknowledged within 120s, escalate to NOC and generate paging via external system (SCADA configured)."
+    }
+  },
+  "diagnostics": {
+    "scada_exposure": {
+      "tags": [
+        {
+          "name": "cpu.primary.role",
+          "type": "string",
+          "description": "Primary/Standby/Wait/Halt",
+          "poll_ms": 1000
+        },
+        {
+          "name": "cpu.a.hsby_link.status",
+          "type": "bool",
+          "description": "HSBY link operational",
+          "poll_ms": 1000
+        },
+        {
+          "name": "cpu.b.hsby_link.status",
+          "type": "bool",
+          "description": "HSBY link operational",
+          "poll_ms": 1000
+        },
+        {
+          "name": "cpu.primary.scan_time_ms",
+          "type": "real",
+          "description": "Current MAST scan time in ms",
+          "poll_ms": 1000
+        },
+        {
+          "name": "cpu.primary.task_load_pct",
+          "type": "real",
+          "description": "CPU task load percent",
+          "poll_ms": 5000
+        },
+        {
+          "name": "module.bmenoc0321.status",
+          "type": "int",
+          "description": "Module status code (0=OK, >0=error)",
+          "poll_ms": 2000
+        },
+        {
+          "name": "rio.{drop}.status",
+          "type": "int",
+          "description": "RIO drop status code",
+          "poll_ms": 2000
+        },
+        {
+          "name": "timesync.status",
+          "type": "int",
+          "description": "Time sync status code (0=OK)",
+          "poll_ms": 10000
+        },
+        {
+          "name": "version.application",
+          "type": "string",
+          "description": "PLC application version Major.Minor.Build",
+          "poll_ms": 60000
+        },
+        {
+          "name": "version.library",
+          "type": "string",
+          "description": "Library / Libset version",
+          "poll_ms": 60000
+        },
+        {
+          "name": "heartbeat.plc",
+          "type": "bool",
+          "description": "PLC heartbeat (toggled bit)",
+          "interval_ms": 1000
+        }
+      ],
+      "naming_convention_reference": "PCS_Naming_Standard document; SCADA tags use dot-separated hierarchy: <system>.<panel>.<device>.<property>"
+    },
+    "heartbeat": {
+      "plc_heartbeat_tag": "heartbeat.plc",
+      "interval_ms": 1000,
+      "timeout_ms": 5000,
+      "action_on_timeout": [
+        "generate_alarm('TIME_SYNC_LOST' if time source missing)",
+        "if heartbeat_from_primary_missing then evaluate_primary_failure()"
+      ]
+    },
+    "versioning": {
+      "application_version_tag": "version.application",
+      "library_version_tag": "version.library",
+      "build_timestamp_tag": "version.build_ts",
+      "policy": "Application Major.Minor.Build reported to SCADA. Any upload/download increments build; Unity DIF reports differences. All version changes logged with timestamp and user."
+    },
+    "events": {
+      "timestamped_events": {
+        "format": "ISO8601 UTC",
+        "exposed_events": [
+          "HSBY_ROLE_CHANGE",
+          "CPU_HALTED",
+          "RIO_DROP_LOST",
+          "IO_MODULE_FAULT",
+          "POWER_SUPPLY_FAILURE",
+          "SIF_TRIP",
+          "CCOTF_CHANGE"
+        ],
+        "log_retention_days": 365,
+        "first_out_in_event_log": true
+      }
+    },
+    "local_diagnostics": {
+      "module_leds_mapped_to_tags": true,
+      "led_tag_examples": [
+        {
+          "name": "io.{module}.led.fault",
+          "type": "bool"
+        },
+        {
+          "name": "io.{module}.led.channel_{n}",
+          "type": "bool"
+        }
+      ]
+    }
+  },
+  "comms": {
+    "interfaces": [
+      {
+        "name": "PLC<->SCADA",
+        "protocol": "Modbus TCP",
+        "module": "BMENOC0321",
+        "max_simultaneous_clients": 32,
+        "message_size_max_bytes": 1024,
+        "scada_poll_interval_ms_default": 1000,
+        "requirements": [
+          "use_device_ip_main_or_secondary_based_on_HSBY_role",
+          "all SCADA writes must be guarded by permissives",
+          "tags must be grouped to minimise polls"
+        ]
+      },
+      {
+        "name": "PLC<->RIO",
+        "protocol": "EtherNet/IP (Deterministic Scanner)",
+        "module": "BMECRA31210",
+        "rpi_default_ms": 25,
+        "deterministic": true,
+        "requirements": [
+          "IO scanner publishes input image each MAST cycle before execution",
+          "RIO owner connections maintained from both CPUs for bumpless switchover"
+        ]
+      },
+      {
+        "name": "PLC<->Profibus",
+        "protocol": "Profibus DP via Profibus Remote Master (PRM)",
+        "usage": "ABB ACS1000 drives and other Profibus slaves",
+        "requirements": [
+          "PRM configured as master; limited to 125 devices and 4KB input/output."
+        ]
+      },
+      {
+        "name": "PLC<->ModbusSerial",
+        "protocol": "Modbus RTU/ASCII (Serial)",
+        "module": "BMXNOM0200",
+        "ports": 2,
+        "requirements": [
+          "serial devices must be mapped into Modbus TCP via CPU gateway or serial cards",
+          "ensure appropriate isolation and grounding"
+        ]
+      },
+      {
+        "name": "PLC<->TimeServer",
+        "protocol": "NTP / Domain Controller",
+        "requirements": [
+          "PLC synchronized to local Domain Controller primary; MCC Domain Controller as secondary",
+          "expose time sync status to SCADA"
+        ]
+      }
+    ],
+    "tag_naming_rules": {
+      "format": "<site>.<panel>.<device>.<instance>.<property>",
+      "examples": [
+        "CBK.PLC1.CPUA.hsby_link",
+        "CBK.RP1.RIOA.module3.channel12.fault",
+        "CBK.MET1.ANALOG1.value"
+      ],
+      "constraints": {
+        "max_length": 64,
+        "allowed_chars": "A-Z a-z 0-9 _ . -",
+        "no_spaces": true
+      },
+      "rate_limits": {
+        "scada_poll_rate_min_ms": 500,
+        "fast_task_tag_poll_ms": 5,
+        "recommended_grouping": "pack multiple contiguous registers in single Modbus read where possible"
+      }
+    },
+    "security": {
+      "network_segmentation": "Device network segregated from control network; BMENOC provides controlled bridging for Modbus TCP.",
+      "recommended_tls": "If vendor supports TLS for Modbus TCP use it; otherwise ensure network-level segmentation and firewalls.",
+      "access_control": "Unity Pro access controlled via supervisor and user profiles; SCADA clients limited to read/write rights per naming standard."
+    }
+  },
+  "redundancy": {
+    "model": "Hot Standby (HSBY) - active/passive redundant PLC pair",
+    "software_state_equivalents": {
+      "T_M_ECPU_HSBY": {
+        "note": "Platform DDT used to exchange local and remote HSBY status and command objects.",
+        "sections": [
+          "LOCAL_HSBY_STS",
+          "REMOTE_HSBY_STS",
+          "COMMON"
+        ]
+      }
+    },
+    "mechanics": {
+      "state_replication": "Before each MAST cycle primary copies State RAM (IO image and application variables) to standby via dedicated HSBY link; periodic exchange of T_M_ECPU_HSBY.",
+      "owner_connections": "Both CPUs maintain owner connections to every RIO drop; outputs remain bumpless during switchover.",
+      "switchover_causes": [
+        "primary_HALTED",
+        "unrecoverable_hardware_error",
+        "STOP_command_received_on_primary",
+        "application_download_on_primary",
+        "primary_power_loss",
+        "primary_loses_all_RIO_but_standby_maintains_some_RIO",
+        "CMD_SWAP"
+      ],
+      "switchover_timing": {
+        "detection_ms": 15,
+        "complete_ms_max": "one MAST cycle (configurable, MAST default 50ms). worst_case_behavior_documented": true
+      },
+      "ip_address_failover": "Main IP addresses are transferred automatically on switchover so distributed equipment continues to reach primary without reconfiguration."
+    },
+    "performance_targets": {
+      "availability_percent_target": 99.9,
+      "cpu_load_target_pct": "<=60",
+      "max_mast_task_ms_default": 50,
+      "fast_task_ms_default": 5
+    },
+    "degraded_modes": {
+      "standby_wait_on_link_loss": "If HSBY link lost for >=3s standby enters WAIT until link restored.",
+      "primary_runs_standalone_on_app_mismatch": "If application mismatch is detected, primary runs standalone and standby enters STOP state; HSBY operation requires identical applications."
+    }
+  },
+  "vendor_mapping": {
+    "vendor_agnostic_requirements": {
+      "redundancy_model": "Active/Passive redundant CPU pair with state replication and bumpless IO owner connections.",
+      "io_scanner": "Deterministic IO scanner with RPI configurable per drop; inputs published before logic scan.",
+      "comm_to_scada": "Modbus TCP server exposing DDT-like structured tags; support for 32 simultaneous SCADA client requests.",
+      "hardware_diag": "Per-module and per-channel diagnostics must be exposed to SCADA, including LED-mapped statuses.",
+      "ccotf": "Support Change of Configuration On The Fly for adding/removing IO modules without stopping runtime where vendor allows."
+    },
+    "siemens": {
+      "notes": "Siemens S7-1500 family with A/B redundancy or S7-1500H (High Availability) supports redundant CPUs and Sync mechanisms. Map M580 HSBY concepts to S7-1500H pair using shared DBs and 'RDP' redundancy services. IO mapping: use PROFINET RT with redundant controllers; translate T_M_ECPU_HSBY to equivalent shared DB with periodic snapshot/compare.",
+      "equivalents": {
+        "BMENOC0321": "Siemens CP/IE or PN-IO controller with Profinet interface",
+        "BMECRA31210": "PROFINET IO device/IE adapter",
+        "X80_IO": "ET 200SP/ET 200MP remote IO",
+        "CCOTF": "Online Hardware Configuration via TIA Portal features (hot-swap supported for specific modules)"
+      },
+      "limitations_and_requirements": [
+        "Ensure S7-1500H license and use of TIA Portal features for HA",
+        "Map Modbus TCP to Siemens IEC or OPC UA (Siemens approach often uses OPC UA/TCP or native Profinet for SCADA)",
+        "Time sync: use NTP or PTP per site policy; S7 supports NTP client"
+      ]
+    },
+    "rockwell": {
+      "notes": "Rockwell ControlLogix/Logix 5000 supports redundancy (ControlLogix Redundancy) with chassis-level mirrored controllers. Map M580 HSBY to ControlLogix redundant pair with I/O nodes using EtherNet/IP. State replication achieved via RSLogix/Studio 5000 Add-On instructions and Produced/Consumed tags.",
+      "equivalents": {
+        "BMENOC0321": "EtherNet/IP bridge or ControlLogix Ethernet module (1756-ENxT) providing Modbus TCP/OPC bridging",
+        "BMECRA31210": "EtherNet/IP adapter modules (remote IO) - e.g., Stratix/EtherNet/IP devices",
+        "X80_IO": "ControlLogix distributed I/O or remote I/O Adapter",
+        "CCOTF": "Studio 5000 supports adding/removing modules online with limitations; ensure module firmware compatibility"
+      },
+      "limitations_and_requirements": [
+        "Licensing for redundancy optional features required (Redundancy license)",
+        "Mapping Modicon DDTs to Shared Produced/Consumed tags or Message instructions",
+        "SCADA Modbus TCP server mapping may require third-party gateway"
+      ]
+    },
+    "beckhoff": {
+      "notes": "Beckhoff TwinCAT 3 supports high-availability via TwinCAT redundancy (AMS/ADS and TwinSAFE for functional safety). Map state replication to TwinCAT project with redundant runtime systems, and EtherCAT or Ethernet-based I/O.",
+      "equivalents": {
+        "BMENOC0321": "Beckhoff EtherCAT Master or Industrial Ethernet interface (EKxxxx modules) with appropriate RT protocols",
+        "BMECRA31210": "EtherCAT device adapter or Ethernet-based remote IO interface",
+        "X80_IO": "Beckhoff EtherCAT Terminals (ELxx/EL98x) or CX/PN IO",
+        "CCOTF": "TwinCAT offers online configuration for some devices; validate per-device hot-swap support"
+      },
+      "limitations_and_requirements": [
+        "Beckhoff uses EtherCAT rather than EtherNet/IP; mapping to Modbus TCP for SCADA may need gateway or use Beckhoff OPC UA Server",
+        "Ensure TwinCAT redundancy module and TwinSAFE if SIL required"
+      ]
+    }
+  },
+  "instances": {
+    "cpus": [
+      {
+        "id": "CPU_A",
+        "type": "BMEH584040",
+        "role": "HSBY_A",
+        "sd_card": "BMXRMS004GPF",
+        "network_ports": 3,
+        "hsby_sfp": true
+      },
+      {
+        "id": "CPU_B",
+        "type": "BMEH584040",
+        "role": "HSBY_B",
+        "sd_card": "BMXRMS004GPF",
+        "network_ports": 3,
+        "hsby_sfp": true
+      }
+    ],
+    "local_racks": [
+      {
+        "id": "PLC_RACK_A",
+        "backplane": "BMEXBP0800",
+        "power_supply": "BMXCPS3500",
+        "cpu": "CPU_A",
+        "modules": [
+          "BMENOC0321",
+          "BMXNRP0201_optional"
+        ]
+      },
+      {
+        "id": "PLC_RACK_B",
+        "backplane": "BMEXBP0800",
+        "power_supply": "BMXCPS3500",
+        "cpu": "CPU_B",
+        "modules": [
+          "BMENOC0321",
+          "BMXNRP0201_optional"
+        ]
+      }
+    ],
+    "remote_racks": {
+      "count_estimated_per_site_max": 16,
+      "example_ids": [
+        "RIO_A",
+        "RIO_B",
+        "RIO_C",
+        "RIO_D",
+        "RIO_E",
+        "RIO_F",
+        "RIO_G",
+        "RIO_H",
+        "RIO_I",
+        "RIO_J",
+        "RIO_K",
+        "RIO_L",
+        "RIO_M",
+        "RIO_N",
+        "RIO_O",
+        "RIO_P"
+      ],
+      "per_rack_standard_modules": [
+        "BMECRA31210",
+        "BMXCPS3500",
+        "BMXDDI3202k (or BMXDDI1602)",
+        "BMXDDO3202K (or BMXDDO1602)",
+        "BMXAMI0810",
+        "BMXAMO0410",
+        "BMXEHC0800",
+        "BMXNOM0200 (optional serial)"
+      ]
+    },
+    "communication_modules": [
+      {
+        "id": "BMENOC0321_A",
+        "location": "PLC_RACK_A"
+      },
+      {
+        "id": "BMENOC0321_B",
+        "location": "PLC_RACK_B"
+      }
+    ],
+    "fibre_converters": [
+      {
+        "id": "BMXNRP0201_1",
+        "used_at": "Coalbrook_site_only_by_default",
+        "count": 1
+      }
+    ],
+    "power_supplies": {
+      "per_rack": 1,
+      "type": "BMXCPS3500",
+      "redundancy_module": "ABL8RED24400 for field power where implemented"
+    },
+    "profibus_remote_master": {
+      "instances": [
+        {
+          "id": "PRM_1",
+          "used_for": "ABB_ACS1000_if_present",
+          "max_devices": 125
+        }
+      ],
+      "count": 1
+    },
+    "modbus_serial_cards": {
+      "per_site_estimated": 1,
+      "module": "BMXNOM0200",
+      "ports_per_module": 2
+    },
+    "conveyors": {
+      "count": 0,
+      "identities": []
+    },
+    "scanners": {
+      "count": 0,
+      "identities": []
+    },
+    "merges": {
+      "count": 0,
+      "identities": []
+    },
+    "palletizers": {
+      "count": 0,
+      "identities": []
+    }
+  },
+  "udts": [
+    {
+      "name": "T_M_ECPU_HSBY",
+      "description": "Hot Standby Derived Data Type exchanged between CPUs.",
+      "fields": [
+        {
+          "name": "LOCAL_HSBY_STS",
+          "type": "HSBY_STS_T"
+        },
+        {
+          "name": "REMOTE_HSBY_STS",
+          "type": "HSBY_STS_T"
+        },
+        {
+          "name": "CMD_SWAP",
+          "type": "bool"
+        },
+        {
+          "name": "REMOTE_STS_VALID",
+          "type": "bool"
+        },
+        {
+          "name": "TIMESTAMP",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "HSBY_STS_T",
+      "description": "Status structure describing a single PLC HSBY state.",
+      "fields": [
+        {
+          "name": "CPU_ROLE",
+          "type": "string"
+        },
+        {
+          "name": "CPU_HEALTH",
+          "type": "int"
+        },
+        {
+          "name": "MAST_SCAN_TIME_MS",
+          "type": "real"
+        },
+        {
+          "name": "OWNER_CONNECTIONS",
+          "type": "int"
+        },
+        {
+          "name": "LED_STATUS_WORD",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "name": "IO_MODULE_STATUS_DDT",
+      "description": "Per-module and per-channel diagnostics.",
+      "fields": [
+        {
+          "name": "module_id",
+          "type": "string"
+        },
+        {
+          "name": "module_status",
+          "type": "int"
+        },
+        {
+          "name": "channel_fault_bitmap",
+          "type": "dword"
+        },
+        {
+          "name": "last_fault_ts",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "RACK_STATUS_DDT",
+      "description": "Remote rack diagnostics and link status.",
+      "fields": [
+        {
+          "name": "rack_id",
+          "type": "string"
+        },
+        {
+          "name": "device_network_link_up",
+          "type": "bool"
+        },
+        {
+          "name": "module_count",
+          "type": "int"
+        },
+        {
+          "name": "power_supply_status",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "VALVE_DDT",
+      "description": "Standard valve control and status DDT for on/off devices.",
+      "fields": [
+        {
+          "name": "cmd_open",
+          "type": "bool"
+        },
+        {
+          "name": "cmd_close",
+          "type": "bool"
+        },
+        {
+          "name": "pos_feedback",
+          "type": "int",
+          "units": "percent"
+        },
+        {
+          "name": "status",
+          "type": "int"
+        },
+        {
+          "name": "alarms",
+          "type": "Alarm_DDT"
+        }
+      ]
+    },
+    {
+      "name": "MOTOR_DDT",
+      "description": "Motor (DOL) control and monitoring DDT.",
+      "fields": [
+        {
+          "name": "start_cmd",
+          "type": "bool"
+        },
+        {
+          "name": "stop_cmd",
+          "type": "bool"
+        },
+        {
+          "name": "run_feedback",
+          "type": "bool"
+        },
+        {
+          "name": "hours_run",
+          "type": "dint"
+        },
+        {
+          "name": "alarms",
+          "type": "Alarm_DDT"
+        }
+      ]
+    },
+    {
+      "name": "ALARM_DDT",
+      "description": "Standard alarm structure.",
+      "fields": [
+        {
+          "name": "alarm_id",
+          "type": "string"
+        },
+        {
+          "name": "severity",
+          "type": "int"
+        },
+        {
+          "name": "latched",
+          "type": "bool"
+        },
+        {
+          "name": "acknowledged",
+          "type": "bool"
+        },
+        {
+          "name": "timestamp",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "VERSION_INFO_DDT",
+      "description": "Application and library version information.",
+      "fields": [
+        {
+          "name": "application_version",
+          "type": "string"
+        },
+        {
+          "name": "library_version",
+          "type": "string"
+        },
+        {
+          "name": "build_timestamp",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "HANDSHAKE_DDT",
+      "description": "Generic handshake structure for palletizer/robot transfer.",
+      "fields": [
+        {
+          "name": "state",
+          "type": "string"
+        },
+        {
+          "name": "request_ts",
+          "type": "string"
+        },
+        {
+          "name": "ack_ts",
+          "type": "string"
+        },
+        {
+          "name": "error_code",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "SCADA_COMM_DDT",
+      "description": "SCADA communication health and counters.",
+      "fields": [
+        {
+          "name": "modbus_tcp_connected_clients",
+          "type": "int"
+        },
+        {
+          "name": "last_scada_request_ts",
+          "type": "string"
+        },
+        {
+          "name": "error_count",
+          "type": "dint"
+        }
+      ]
+    },
+    {
+      "name": "TIME_SYNC_DDT",
+      "description": "Time synchronization diagnostic info.",
+      "fields": [
+        {
+          "name": "ntp_status",
+          "type": "int"
+        },
+        {
+          "name": "last_sync_ts",
+          "type": "string"
+        },
+        {
+          "name": "offset_ms",
+          "type": "real"
+        }
+      ]
+    },
+    {
+      "name": "POWER_SUPPLY_DDT",
+      "description": "Power supply diagnostic and status.",
+      "fields": [
+        {
+          "name": "input_voltage_v",
+          "type": "real"
+        },
+        {
+          "name": "output_voltage_v",
+          "type": "real"
+        },
+        {
+          "name": "temperature_c",
+          "type": "real"
+        },
+        {
+          "name": "status_code",
+          "type": "int"
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "feature": "HSBY Role Swap",
+      "scenarios": [
+        {
+          "title": "Primary CPU failure triggers immediate switchover to standby",
+          "gherkin": "Given two HSBY CPUs configured and synced\nAnd Primary CPU is executing\nWhen Primary CPU encounters blocking HALT\nThen Standby CPU becomes Primary within one MAST cycle\nAnd SCADA receives CPU role change event\nAnd outputs remain bumpless"
+        },
+        {
+          "title": "CMD_SWAP initiates controlled swap",
+          "gherkin": "Given both CPUs healthy and synced\nWhen operator sends CMD_SWAP via SCADA\nThen Standby becomes Primary within configured timeout\nAnd both CPUs report new roles to SCADA"
+        }
+      ]
+    },
+    {
+      "feature": "HSBY Link Loss Handling",
+      "scenarios": [
+        {
+          "title": "Standby enters WAIT on HSBY link down >3s",
+          "gherkin": "Given HSBY link healthy\nWhen HSBY link is lost for > 3000 ms\nThen Standby enters WAIT state\nAnd SCADA alarm CPU_B_HSBY_LINK_DOWN generated"
+        },
+        {
+          "title": "Primary continues if standby link lost",
+          "gherkin": "Given Primary and Standby synced\nWhen link to Standby lost\nThen Primary remains Primary and continues execution\nAnd SCADA is notified"
+        }
+      ]
+    },
+    {
+      "feature": "Remote IO Fault and Recovery",
+      "scenarios": [
+        {
+          "title": "RIO drop loss is alarmed and recovered automatically",
+          "gherkin": "Given RIO drop is present and healthy\nWhen RIO drop communication lost\nThen PLC raises RIO_DROP_FAULT alarm\nAnd when communication restored alarm clears automatically\nAnd SCADA log contains timestamped events"
+        }
+      ]
+    },
+    {
+      "feature": "Application Response Time",
+      "scenarios": [
+        {
+          "title": "Verify Application Response Time within estimate",
+          "gherkin": "Given CRA_RPI = 25ms and MAST = 50ms and FAST = 5ms\nWhen an input transitions\nThen associated output change completes within 134 ms (133.8 ms estimate)\nAnd measured ART <= 200 ms (conservative acceptance)"
+        }
+      ]
+    },
+    {
+      "feature": "Modbus TCP SCADA Interface",
+      "scenarios": [
+        {
+          "title": "SCADA reads application version",
+          "gherkin": "Given Modbus TCP interface configured\nWhen SCADA reads version.application\nThen PLC returns Major.Minor.Build and build timestamp\nAnd value matches Unity project build metadata"
+        },
+        {
+          "title": "SCADA client connection limit enforced",
+          "gherkin": "Given BMENOC configured max clients 32\nWhen 33rd client attempts connect\nThen connection refused and event logged"
+        }
+      ]
+    },
+    {
+      "feature": "Alarming and First-Out",
+      "scenarios": [
+        {
+          "title": "Critical alarm is first-out and latched",
+          "gherkin": "Given CPU_PRIMARY_HALTED occurs\nWhen alarm generated\nThen it is presented as first-out\nAnd it remains latched until acknowledged\nAnd reset only after fault cleared and manual operator action"
+        },
+        {
+          "title": "Inhibiting an alarm logs inhibit state",
+          "gherkin": "Given operator is authorized\nWhen operator inhibits IO_MODULE_CHANNEL_FAULT\nThen alarm becomes inhibited in SCADA\nAnd inhibited state is logged with user and timestamp"
+        }
+      ]
+    },
+    {
+      "feature": "CCOTF (Change of Configuration On The Fly)",
+      "scenarios": [
+        {
+          "title": "Add remote IO drop online",
+          "gherkin": "Given system in RUN and spare backplane slots available\nWhen engineer adds new RIO drop via CCOTF\nThen new drop becomes visible to IO scanner without stopping CPU\nAnd SCADA receives new rack status and module list"
+        }
+      ]
+    },
+    {
+      "feature": "Diagnostics and Heartbeat",
+      "scenarios": [
+        {
+          "title": "Heartbeat timeout triggers diagnostic actions",
+          "gherkin": "Given heartbeat.plc toggles every 1000 ms\nWhen heartbeat missing for >5000 ms\nThen TIME_SYNC_LOST alarm is generated\nAnd SCADA event logged with timestamp"
+        }
+      ]
+    },
+    {
+      "feature": "Palletizer Handshake (generic)",
+      "scenarios": [
+        {
+          "title": "Successful pallet handshake",
+          "gherkin": "Given palletizer connected and IDLE\nWhen packaging sequence requests pallet\nThen palletizer responds PALLET_READY within 20s\nAnd transfer completes and ACK_TRANSFER received\nAnd state transitions to COMPLETE"
+        },
+        {
+          "title": "Handshake timeout leads to fault",
+          "gherkin": "Given palletizer REQUEST_PALLET state\nWhen PALLET_READY not received within 20s\nThen retries up to 2\nAnd on further timeout state transitions to FAULT\nAnd PALLETIZER_HANDSHAKE_FAULT alarm is generated"
+        }
+      ]
+    }
+  ]
+}
