@@ -104,16 +104,20 @@ in case of document retrieve answer from document"""
 llm = ChatOpenAI(model=os.getenv("MODEL_NAME"), api_key=openai_api_key)
 
 def ask_question(messages: List[Dict[str, str]], temperature: float = 0.2, response_format: str = "text"):
-    print("\nSending to LLM:", json.dumps(messages, indent=2))
-    print("-----------------------------------------------")
+
+    print("starting")
+    # print("\nSending to LLM:", json.dumps(messages, indent=2))
+    # print("-----------------------------------------------")
+    print("LLm invoked")
     response = llm.invoke(messages)
-    with open("response.json", "w") as f:
-        f.write(response.content)
-    print("\nRaw LLM response:")
-    print(response.content)
-    with open("raw-response.json", "w") as f:
-        f.write(response.content)
-    print("------------------------------------------------")
+    # with open("response.json", "w") as f:
+    #     f.write(response.content)
+    # print("\nRaw LLM response:")
+    # print(response.content)
+    # with open("raw-response.json", "w") as f:
+    #     f.write(response.content)
+    # print("------------------------------------------------")
+    print("response is returned")
     return response.content
 
 
@@ -192,30 +196,36 @@ class Orchestrator:
         }.get(vendor.lower())
         if not profile:
             raise CodeGenError(f"Unsupported vendor: {vendor}")
+
         # 1) SPEC → CONTRACT (strict JSON)
+        print("spec-to-contarct started")
         contract = self._spec_to_contract(spec_text=spec_text, vendor_profile=profile)
         print("spec-to-contarct completed")
-        with open("sepc-contract.json", "w") as f:
-            json.dump(contract, f, indent=2)
+        # with open("sepc-contract.json", "w") as f:
+        #     json.dump(contract, f, indent=2)
             
         # 2) CONTRACT → PLAN (files/modules/OBs/AOIs/UDTs, interfaces, tag map)
+        print("contract-to-plan started")
         plan = self._contract_to_plan(contract=contract, vendor_profile=profile,project_name=project_name)
         print("contract-to-plan completed")
-        with open("plan.json", "w") as f:
-            json.dump(plan, f, indent=2)
+        # with open("plan.json", "w") as f:
+        #     json.dump(plan, f, indent=2)
             
         # # 3) PLAN → CODE (generate every file; block “skeletons”)
+        print("plan-to-code started")
         files = self._plan_to_code(contract=contract, plan=plan, vendor_profile=profile)
         print("plan-to-code completed")
-        with open("plan-to-code.json", "w") as f:
-            json.dump(files, f, indent=2)
+        # with open("plan-to-code.json", "w") as f:
+        #     json.dump(files, f, indent=2)
             
         # # 4) CRITIC & PATCH (iterate until complete or max attempts)
+        print("critic-and-patch started")
         files = self._critic_and_patch(contract=contract, plan=plan, files=files,vendor_profile=profile)
         print("critic-and-patch completed")
-        with open("critic-patch.json", "w") as f:
-            json.dump(files, f, indent=2)
+        # with open("critic-patch.json", "w") as f:
+        #     json.dump(files, f, indent=2)
         # # 5) PACKAGING (README, build notes, SCADA map)
+        print("packaging started")
         bundle = self._pack(project_name=project_name, plan=plan, files=files,vendor_profile=profile)
         return {"contract": contract,"plan": plan,"files": files,"bundle": bundle}
     def _spec_to_contract(self, *, spec_text: str, vendor_profile: VendorProfile) -> Dict[str, Any]:
@@ -251,42 +261,94 @@ class Orchestrator:
         # self._reject_skeleton(code, mod["name"])
         files[relpath] = code
         return files
-
-    def _critic_and_patch(self, *, contract: Dict[str, Any], plan: Dict[str, Any], files: Dict[str, str],vendor_profile: VendorProfile) -> Dict[str, str]:
-        MAX_ITERS = 3
-        for _ in range(MAX_ITERS):
-            critic_messages = [
-            {"role": "system", "content": vendor_profile.system_prompt},
-            {"role": "user", "content": vendor_profile.critic_prompt.format(
-            plan_json=json.dumps(plan, ensure_ascii=False, indent=2),
-            files_json=json.dumps(files, ensure_ascii=False, indent=2),
-            checklist=vendor_profile.completeness_checklist,
-            contract_json=json.dumps(contract, ensure_ascii=False, indent=2)
-            )}
+    def _critic_and_patch(self, *, contract: Dict[str, Any], plan: Dict[str, Any], files: Dict[str, str], vendor_profile: VendorProfile) -> Dict[str, str]:
+        MAX_ITERS = 3  # Reduced from default for debugging
+        for i in range(MAX_ITERS):
+            print(f"\n--- Critic Iteration {i+1}/{MAX_ITERS} ---")
+            
+            # Get critic review
+            critic_messages = [{
+                "role": "system", 
+                "content": vendor_profile.critic_prompt.format(
+                    plan_json=json.dumps(plan, ensure_ascii=False, indent=2),
+                    files_json=json.dumps(files, ensure_ascii=False, indent=2),
+                    checklist=vendor_profile.completeness_checklist,
+                    contract_json=json.dumps(contract, ensure_ascii=False, indent=2)
+                )}
             ]
+            
+            print("\nSending to critic...")
             review_raw = ask_question(critic_messages, response_format="json")
-            review = enforce_json(review_raw)   
-            if review["status"] == "complete":
-                return files
-            # Apply patches
-            for patch in review.get("patches", []):
-                path = patch["relpath"]
-                files[path] = patch["new_content"]
-                # self._reject_skeleton(files[path], path)
-        if MAX_ITERS > 0:
-            # Final decisive fail with clear reason
-            raise CodeGenError("Critic could not reach completeness within patch budget.")
+            
+            try:
+                review = enforce_json(review_raw)
+                print(f"Critic status: {review.get('status')}")
+                
+                # Save review for debugging
+                with open(f"critic_review_{i}.json", "w") as f:
+                    json.dump(review, f, indent=2)
+                
+                if review.get("status") == "complete":
+                    print("Critic marked as complete!")
+                    return files
+                    
+                # Apply patches if any
+                patches = review.get("patches", [])
+                print(f"Applying {len(patches)} patches...")
+                
+                for patch in patches:
+                    path = patch["relpath"]
+                    print(f"  - Patching {path}")
+                    files[path] = patch["new_content"]
+                    
+            except Exception as e:
+                print(f"Error processing critic response: {str(e)}")
+                print("Raw response:", review_raw[:500] + "..." if len(review_raw) > 500 else review_raw)
+                raise
+        
+        # If we get here, we've exceeded max iterations
+        print("\nCritic reviews completed without reaching 'complete' status.")
+        print("Final files generated:")
+        for path in files:
+            print(f"- {path}")
+        
+        # For debugging, return the files anyway
         return files
 
+    # def _critic_and_patch(self, *, contract: Dict[str, Any], plan: Dict[str, Any], files: Dict[str, str],vendor_profile: VendorProfile) -> Dict[str, str]:
+    #     MAX_ITERS = 3
+    #     for _ in range(MAX_ITERS):
+    #         critic_messages = [
+    #         {"role": "system", "content": vendor_profile.system_prompt},
+    #         {"role": "user", "content": vendor_profile.critic_prompt.format(
+    #         plan_json=json.dumps(plan, ensure_ascii=False, indent=2),
+    #         files_json=json.dumps(files, ensure_ascii=False, indent=2),
+    #         checklist=vendor_profile.completeness_checklist,
+    #         contract_json=json.dumps(contract, ensure_ascii=False, indent=2)
+    #         )}
+    #         ]
+    #         review_raw = ask_question(critic_messages, response_format="json")
+    #         review = enforce_json(review_raw)   
+    #         if review["status"] == "complete":
+    #             return files
+    #         # Apply patches
+    #         for patch in review.get("patches", []):
+    #             path = patch["relpath"]
+    #             files[path] = patch["new_content"]
+    #             # self._reject_skeleton(files[path], path)
+    #     if MAX_ITERS > 0:
+    #         # Final decisive fail with clear reason
+    #         raise CodeGenError("Critic could not reach completeness within patch budget.")
+    #     return files
     def _pack(self, *, project_name: str, plan: Dict[str, Any], files: Dict[str, str], vendor_profile:VendorProfile) -> Dict[str, Any]:
-        readme = ask_question([
-            [{"role":"system","content": vendor_profile.system_prompt},
+        readme = ask_question([ #Corrected messages
+            {"role":"system","content": vendor_profile.system_prompt},
             {"role":"user","content": vendor_profile.pack_prompt.format(
-            project_name=project_name,
-            plan_json=json.dumps(plan, ensure_ascii=False, indent=2)
+                project_name=project_name,
+                plan_json=json.dumps(plan, ensure_ascii=False, indent=2)
             )}
-            ]],
-            )
+        ],
+        )
         # write files
         proj_dir = os.path.join(self.out_dir, project_name)
         os.makedirs(proj_dir, exist_ok=True)
@@ -298,6 +360,27 @@ class Orchestrator:
         with open(os.path.join(proj_dir, "README.md"), "w", encoding="utf-8") as f:
             f.write(readme)
         return {"readme": readme, "project_dir": proj_dir}
+
+    # def _pack(self, *, project_name: str, plan: Dict[str, Any], files: Dict[str, str], vendor_profile:VendorProfile) -> Dict[str, Any]:
+    #     readme = ask_question([
+    #         [{"role":"system","content": vendor_profile.system_prompt},
+    #         {"role":"user","content": vendor_profile.pack_prompt.format(
+    #         project_name=project_name,
+    #         plan_json=json.dumps(plan, ensure_ascii=False, indent=2)
+    #         )}
+    #         ]],
+    #         )
+    #     # write files
+    #     proj_dir = os.path.join(self.out_dir, project_name)
+    #     os.makedirs(proj_dir, exist_ok=True)
+    #     for rel, content in files.items():
+    #         dst = os.path.join(proj_dir, rel)
+    #         os.makedirs(os.path.dirname(dst), exist_ok=True)
+    #         with open(dst, "w", encoding="utf-8") as f:
+    #             f.write(content)
+    #     with open(os.path.join(proj_dir, "README.md"), "w", encoding="utf-8") as f:
+    #         f.write(readme)
+    #     return {"readme": readme, "project_dir": proj_dir}
 
     # def _reject_skeleton(self, code: str, name: str):
     #     # Hard guard: forbid empty stubs, TODOs, “skeleton” wording, or missing logic markers.

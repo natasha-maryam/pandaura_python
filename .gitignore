@@ -1,1 +1,19 @@
 .env
+
+/.venv
+.venv
+
+
+/__pycache__
+__pycache__/
+
+generator/__pycache__/
+
+
+# Virtual environment
+venv/
+*/__pycache__/
+
+# Don't push compiled python files
+*.pyc
+*.pyo
